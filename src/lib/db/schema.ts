@@ -138,7 +138,7 @@ export const sales = pgTable("sales", {
 });
 
 export type PayeeKind = "designer" | "maker" | "platform";
-export type CreditStatus = "pending" | "in_batch" | "paid" | "unclaimed" | "returned" | "reversed";
+export type CreditStatus = "pending" | "in_batch" | "paid" | "unclaimed" | "returned" | "reversed" | "kept";
 
 // The ledger: what Lineage owes each payee. Rows are written only after PayPal confirms a capture.
 export const credits = pgTable("credits", {

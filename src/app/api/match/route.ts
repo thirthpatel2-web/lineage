@@ -5,6 +5,7 @@ import { route } from "@/lib/http";
 import { storeImage } from "@/lib/images";
 import { runLens } from "@/lib/ai/lens";
 import { getChain } from "@/lib/lineage";
+import { firstImageIds } from "@/lib/queries";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -38,6 +39,7 @@ export const POST = route(async (req: Request) => {
   });
 
   const lineage = top && (result.band === "strong" || result.band === "possible") ? await getChain(top.patternId) : [];
+  const thumbs = await firstImageIds(lineage.map((p) => p.id));
   return NextResponse.json({
     id,
     imageId: image.id,
@@ -53,6 +55,7 @@ export const POST = route(async (req: Request) => {
       creditRequired: p.creditRequired,
       batchLimit: p.batchLimit,
       licenseText: p.licenseText,
+      imageId: thumbs.get(p.id) ?? null,
     })),
   });
 });

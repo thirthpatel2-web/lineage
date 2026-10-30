@@ -377,7 +377,7 @@ const simulator = {
 
   createInvoice(input: InvoiceInput) {
     const id = `SIMINV-${nanoid(10).toUpperCase()}`;
-    return { id, payerUrl: `${env.appUrl}/sim/invoice/${id}?amount=${toPayPalValue(input.unitCents * input.units)}`, qrPng: undefined };
+    return { id, payerUrl: `${env.appUrl}/sim/invoice/${id}`, qrPng: undefined };
   },
 };
 

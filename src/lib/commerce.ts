@@ -115,7 +115,7 @@ export async function completeOrder(orderId: string): Promise<{ kind: "license" 
       .returning({ id: table.id });
     if (flipped.length === 0) return; // another caller already recorded it
     await tx.insert(schema.credits).values(
-      credits.map((c) => ({ id: newId("cr"), sourceKind: kind, sourceId: record.id, payeeKind: c.payeeKind, payeeId: c.payeeId, patternId: c.patternId, amountCents: c.amountCents })),
+      credits.map((c) => ({ id: newId("cr"), sourceKind: kind, sourceId: record.id, payeeKind: c.payeeKind, payeeId: c.payeeId, patternId: c.patternId, amountCents: c.amountCents, status: c.payeeKind === "platform" ? ("kept" as const) : ("pending" as const) })),
     );
     if (sale) await tx.update(schema.listings).set({ stock: sql`${schema.listings.stock} - 1` }).where(eq(schema.listings.id, sale.listingId));
   });
@@ -251,7 +251,7 @@ export async function markOfferPaid(invoiceId: string) {
     const flipped = await tx.update(schema.offers).set({ status: "paid" }).where(and(eq(schema.offers.id, offer.id), eq(schema.offers.status, "sent"))).returning();
     if (flipped.length === 0) return;
     await tx.insert(schema.credits).values(
-      credits.map((c) => ({ id: newId("cr"), sourceKind: "license" as const, sourceId: offer.id, payeeKind: c.payeeKind, payeeId: c.payeeId, patternId: c.patternId, amountCents: c.amountCents })),
+      credits.map((c) => ({ id: newId("cr"), sourceKind: "license" as const, sourceId: offer.id, payeeKind: c.payeeKind, payeeId: c.payeeId, patternId: c.patternId, amountCents: c.amountCents, status: c.payeeKind === "platform" ? ("kept" as const) : ("pending" as const) })),
     );
   });
 }
