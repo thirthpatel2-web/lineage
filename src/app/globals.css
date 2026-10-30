@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+/* Lineage: an indigo-ink ground, a madder-rose accent for designers, a thread-green for money. */
+:root {
+  --bg: #f6f5fa;
+  --surface: #ffffff;
+  --sunk: #eceaf4;
+  --ink: #17142b;
+  --muted: #5c5873;
+  --line: #dad6e8;
+  --accent: #c8285e;
+  --accent-soft: #f9dce6;
+  --on-accent: #ffffff;
+  --money: #1e7f5f;
+  --money-soft: #d8f0e6;
+  --warn: #a8620b;
+  --warn-soft: #fbebd3;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #110f1f;
+    --surface: #1a1730;
+    --sunk: #221f3b;
+    --ink: #eceaf6;
+    --muted: #a6a1c2;
+    --line: #33304f;
+    --accent: #ff6f9a;
+    --accent-soft: #3d1c2e;
+    --on-accent: #1a0b12;
+    --money: #4fd1a5;
+    --money-soft: #173a30;
+    --warn: #f2b35c;
+    --warn-soft: #3a2a12;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-sunk: var(--sunk);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-money: var(--money);
+  --color-money-soft: var(--money-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --font-display: var(--font-bricolage), "Segoe UI", system-ui, sans-serif;
+  --font-sans: var(--font-atkinson), "Segoe UI", system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, Consolas, monospace;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; letter-spacing: -0.02em; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+
+/* The running-stitch rule, Lineage's signature divider. */
+.stitch {
+  height: 3px;
+  background: repeating-linear-gradient(90deg, var(--line) 0 14px, transparent 14px 24px);
+}
+.stitch-flow {
+  stroke-dasharray: 6 10;
+  animation: stitch-flow 1.6s linear infinite;
+}
+@keyframes stitch-flow { to { stroke-dashoffset: -32; } }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
+.eyebrow { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; color: var(--accent); }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  font-weight: 700; border-radius: 12px; padding: 0.7rem 1.1rem; transition: filter .15s, transform .15s;
+  background: var(--ink); color: var(--bg); cursor: pointer;
+}
+.btn:hover { filter: brightness(1.15); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.btn-accent { background: var(--accent); color: var(--on-accent); }
+.btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.btn-paypal { background: #ffc439; color: #111; }
+
+.field { display: flex; flex-direction: column; gap: .35rem; font-size: .92rem; }
+.field > span { font-weight: 700; }
+.input {
+  width: 100%; background: var(--surface); color: var(--ink); border: 1px solid var(--line);
+  border-radius: 10px; padding: .6rem .75rem; font: inherit;
+}
+.input:focus { outline: 2px solid var(--accent); outline-offset: 0; }
+
+.pill { display: inline-flex; align-items: center; gap: .35rem; font-family: var(--font-mono); font-size: .72rem; font-weight: 600; padding: .2rem .55rem; border-radius: 999px; white-space: nowrap; }
+.pill-good { background: var(--money-soft); color: var(--money); }
+.pill-warn { background: var(--warn-soft); color: var(--warn); }
+.pill-bad { background: var(--accent-soft); color: var(--accent); }
+.pill-plain { background: var(--sunk); color: var(--muted); }
+
+.bar-track { height: 8px; background: var(--sunk); border-radius: 99px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 99px; background: var(--money); transform-origin: left; animation: grow .8s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes grow { from { transform: scaleX(.02); } to { transform: scaleX(1); } }
+
+.rise { animation: rise .5s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes rise { from { transform: translateY(10px); } to { transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+@media print {
+  header, footer, .no-print { display: none !important; }
+  body { background: #fff; }
+}
