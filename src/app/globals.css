@@ -98,7 +98,7 @@ h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; letter-spacin
 }
 .input:focus { outline: 2px solid var(--accent); outline-offset: 0; }
 
-.pill { display: inline-flex; align-items: center; gap: .35rem; font-family: var(--font-mono); font-size: .72rem; font-weight: 600; padding: .2rem .55rem; border-radius: 999px; white-space: nowrap; }
+.pill { display: inline-flex; align-items: center; gap: .35rem; line-height: 1.4; font-family: var(--font-mono); font-size: .72rem; font-weight: 600; padding: .2rem .55rem; border-radius: 999px; white-space: nowrap; }
 .pill-good { background: var(--money-soft); color: var(--money); }
 .pill-warn { background: var(--warn-soft); color: var(--warn); }
 .pill-bad { background: var(--accent-soft); color: var(--accent); }

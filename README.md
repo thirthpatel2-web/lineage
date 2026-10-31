@@ -8,6 +8,16 @@ Built for the [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/)
 
 > Runs on the PayPal **sandbox** only. No real money moves.
 
+![Lineage home](docs/screenshots/1-home.png)
+
+| Snap & license | License receipt with QR tags |
+|---|---|
+| ![Snap and license](docs/screenshots/2-snap-match.png) | ![License receipt](docs/screenshots/3-license-receipt.png) |
+| **Shopping agent skipping unlicensed copies** | **Royalty console (AG Grid)** |
+| ![Agent](docs/screenshots/4-agent.png) | ![Royalty console](docs/screenshots/5-royalty-console.png) |
+| **AG Studio dashboard with a Claude assistant** | **Pattern lineage and lineage.json** |
+| ![AG Studio](docs/screenshots/6-ag-studio.png) | ![Pattern](docs/screenshots/7-pattern-lineage.png) |
+
 ---
 
 ## Why
