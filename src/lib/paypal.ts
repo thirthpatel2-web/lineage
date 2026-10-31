@@ -375,7 +375,7 @@ const simulator = {
     return batch;
   },
 
-  createInvoice(input: InvoiceInput) {
+  createInvoice(_input: InvoiceInput) {
     const id = `SIMINV-${nanoid(10).toUpperCase()}`;
     return { id, payerUrl: `${env.appUrl}/sim/invoice/${id}`, qrPng: undefined };
   },

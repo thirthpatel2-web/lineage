@@ -49,9 +49,9 @@
   --color-money-soft: var(--money-soft);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
-  --font-display: var(--font-bricolage), "Segoe UI", system-ui, sans-serif;
-  --font-sans: var(--font-atkinson), "Segoe UI", system-ui, sans-serif;
-  --font-mono: var(--font-jetbrains), ui-monospace, Consolas, monospace;
+  --font-display: "Bricolage Grotesque Variable", "Segoe UI", system-ui, sans-serif;
+  --font-sans: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
 }
 
 html { scroll-behavior: smooth; }

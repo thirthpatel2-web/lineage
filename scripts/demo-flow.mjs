@@ -1,3 +1,5 @@
+// End-to-end click-through of the main flows in a real browser (Edge via playwright-core).
+//   node scripts/demo-flow.mjs <screenshotDir>
 import { chromium } from "playwright-core";
 const out = process.argv[2];
 const b = await chromium.launch({ channel: "msedge", headless: true });

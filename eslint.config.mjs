@@ -18,7 +18,16 @@ const eslintConfig = [
       "out/**",
       "build/**",
       "next-env.d.ts",
+      ".data/**",
+      ".cache/**",
     ],
+  },
+  {
+    rules: {
+      // Images come from our own API at a fixed size; next/image would add nothing.
+      "@next/next/no-img-element": "off",
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_", destructuredArrayIgnorePattern: "^_" }],
+    },
   },
 ];
 

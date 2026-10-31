@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Atkinson_Hyperlegible, Bricolage_Grotesque, JetBrains_Mono } from "next/font/google";
+import "@fontsource-variable/bricolage-grotesque";
+import "@fontsource/atkinson-hyperlegible/400.css";
+import "@fontsource/atkinson-hyperlegible/700.css";
+import "@fontsource/jetbrains-mono/400.css";
+import "@fontsource/jetbrains-mono/600.css";
 import { mode } from "@/lib/env";
 import { Logo } from "@/components/logo";
 import "./globals.css";
 
-const display = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-bricolage", weight: ["500", "700", "800"] });
-const body = Atkinson_Hyperlegible({ subsets: ["latin"], variable: "--font-atkinson", weight: ["400", "700"] });
-const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains", weight: ["400", "600"] });
 
 export const metadata: Metadata = {
   title: { default: "Lineage · Royalty, not takedown", template: "%s · Lineage" },
@@ -27,7 +28,7 @@ const NAV = [
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={`${display.variable} ${body.variable} ${mono.variable} min-h-dvh flex flex-col`}>
+      <body className="min-h-dvh flex flex-col">
         <header className="sticky top-0 z-30 border-b border-line bg-bg/85 backdrop-blur">
           <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
             <Link href="/" className="flex items-center gap-2 font-display text-xl font-extrabold">
