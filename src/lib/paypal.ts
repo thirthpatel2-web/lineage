@@ -68,7 +68,7 @@ async function call<T>(
   method: "GET" | "POST" | "PATCH",
   path: string,
   body?: unknown,
-  opts: { requestId?: string; prefer?: string; raw?: boolean } = {},
+  opts: { requestId?: string; prefer?: string } = {},
 ): Promise<T> {
   for (let attempt = 0; ; attempt++) {
     const token = await accessToken();
@@ -101,7 +101,6 @@ async function call<T>(
         detail.details,
       );
     }
-    if (opts.raw) return (await res.text()) as T;
     if (res.status === 204) return undefined as T;
     const text = await res.text();
     return (text ? JSON.parse(text) : undefined) as T;
@@ -208,7 +207,7 @@ export async function createPayoutBatch(senderBatchId: string, items: PayoutItem
 
 export async function getPayoutBatch(batchId: string): Promise<PayoutBatch> {
   if (!mode.paypal) return simulator.getPayoutBatch(batchId);
-  return call<PayoutBatch>("GET", `/v1/payments/payouts/${encodeURIComponent(batchId)}?fields=batch_header,items`);
+  return call<PayoutBatch>("GET", `/v1/payments/payouts/${encodeURIComponent(batchId)}`);
 }
 
 // --- Invoicing (license offers) -----------------------------------------------------
@@ -224,7 +223,7 @@ export type InvoiceInput = {
   reference: string;
 };
 
-export async function createAndSendInvoice(input: InvoiceInput): Promise<{ id: string; payerUrl: string; qrPng?: string }> {
+export async function createAndSendInvoice(input: InvoiceInput): Promise<{ id: string; payerUrl: string }> {
   if (!mode.paypal) return simulator.createInvoice(input);
   const [given, ...rest] = input.recipientName.trim().split(/\s+/);
   const created = await call<{ id?: string; href?: string; links?: Link[] }>(
@@ -262,19 +261,17 @@ export async function createAndSendInvoice(input: InvoiceInput): Promise<{ id: s
 
   await call("POST", `/v2/invoicing/invoices/${id}/send`, { send_to_invoicer: false, send_to_recipient: true }, { requestId: `send-${id}` });
   const invoice = await call<{ detail?: { metadata?: { recipient_view_url?: string } } }>("GET", `/v2/invoicing/invoices/${id}`);
-  const qrPng = await call<string>("POST", `/v2/invoicing/invoices/${id}/generate-qr-code`, { width: 320, height: 320 }, { raw: true }).catch(() => undefined);
 
   return {
     id,
     payerUrl: invoice.detail?.metadata?.recipient_view_url ?? `https://www.sandbox.paypal.com/invoice/p/#${id}`,
-    qrPng: qrPng ? extractBase64Png(qrPng) : undefined,
   };
 }
 
-// generate-qr-code answers with a multipart body around a base64 PNG.
-function extractBase64Png(body: string) {
-  const match = body.match(/iVBORw0KGgo[A-Za-z0-9+/=\r\n]+/);
-  return match ? match[0].replace(/\s+/g, "") : undefined;
+export async function getInvoiceStatus(invoiceId: string): Promise<string> {
+  if (!mode.paypal) return "SENT";
+  const invoice = await call<{ status?: string }>("GET", `/v2/invoicing/invoices/${encodeURIComponent(invoiceId)}`);
+  return invoice.status ?? "UNKNOWN";
 }
 
 // --- Webhooks -----------------------------------------------------------------------
@@ -377,7 +374,7 @@ const simulator = {
 
   createInvoice(_input: InvoiceInput) {
     const id = `SIMINV-${nanoid(10).toUpperCase()}`;
-    return { id, payerUrl: `${env.appUrl}/sim/invoice/${id}`, qrPng: undefined };
+    return { id, payerUrl: `${env.appUrl}/sim/invoice/${id}` };
   },
 };
 

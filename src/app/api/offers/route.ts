@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { route } from "@/lib/http";
+import { checkAiBudget } from "@/lib/rate-limit";
 import { draftOffer } from "@/lib/agents/watch";
 
 export const runtime = "nodejs";
@@ -17,6 +18,7 @@ const Fields = z.object({
 });
 
 export const POST = route(async (req: Request) => {
+  checkAiBudget(req);
   const form = await req.formData();
   const fields = Fields.parse(Object.fromEntries([...form.entries()].filter(([, v]) => typeof v === "string")));
   const file = form.get("photo");

@@ -2,6 +2,13 @@
 
 Copy each section into the matching Devpost field. Replace the placeholders in CAPS.
 
+> **Before you paste.** Some of this describes what the code is built to do but hasn't been confirmed yet. Delete or reword anything still untrue:
+> - "with real PayPal objects": true once `npm run preflight` passes and you've done a purchase in the sandbox.
+> - The remix-vs-base claim under Challenges: true once you've seen Claude vision get it right. The measured 99% is embeddings only.
+> - "(via Channel3)": only if you set a Channel3 key and tested it. Otherwise say "other marketplaces (labelled sample data)".
+> - The 99% / 100% / 0.6% numbers: replace with your real-photo results if you have them.
+> - The AG Studio assistant: it has only run against a stand-in. Try it once with your key.
+
 ---
 
 ## Name
@@ -32,7 +39,7 @@ YouTube solved this for video with Content ID: a match can earn the rights holde
 
 - **Next.js 15 + TypeScript**, Postgres via Drizzle (embedded PGlite locally, so `npm install && npm run dev` just works).
 - **Lineage Lens:** CLIP ViT-B/32 embeddings run locally (ONNX) to shortlist candidate patterns; Claude Opus 5.5 then compares construction details across the photos with structured output, explains its reasoning, and flags traditional designs. Plain code turns scores into strong / possible / none bands.
-- **PayPal:** Orders v2 for licenses and Market purchases, Payouts for royalties, Invoicing v2 for license offers, Webhooks with signature verification, and Transaction Search for reconciliation.
+- **PayPal:** Orders v2 for licenses and Market purchases, Payouts for royalties, Invoicing v2 for license offers, Webhooks with signature verification, and Transaction Search behind a "Reconcile with PayPal" button.
 - **Money safety:** integer cents and basis points; credits written only after a verified `COMPLETED` capture for the exact amount; idempotent capture, webhook and payout handling (`PayPal-Request-Id`, unique `sender_batch_id`, conditional state flips); 2,000-case randomized test that every split sums exactly.
 - **Agents:** the Anthropic SDK Tool Runner drives the shopping agent; the same tool functions back a stateless Streamable HTTP MCP server built with the official MCP SDK.
 - **AG Studio:** we wrote a custom `AgLlmAdapter` that proxies AG Studio's assistant turns to Claude on our server, translating tool calls both ways.

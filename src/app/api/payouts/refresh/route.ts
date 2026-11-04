@@ -1,15 +1,23 @@
 import { NextResponse } from "next/server";
-import { inArray } from "drizzle-orm";
+import { isNotNull } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { route } from "@/lib/http";
-import { refreshPayoutBatch } from "@/lib/commerce";
+import { refreshOffers, refreshPayoutBatch } from "@/lib/commerce";
 
 export const runtime = "nodejs";
 
-// Re-read every unfinished payout batch from PayPal.
+// Re-read payouts and invoices from PayPal. Finished batches are included too, because an
+// UNCLAIMED item can still become SUCCESS or RETURNED later.
 export const POST = route(async () => {
   const db = await getDb();
-  const open = await db.select().from(schema.payoutBatches).where(inArray(schema.payoutBatches.status, ["QUEUED", "PENDING", "PROCESSING", "NEW"]));
-  for (const batch of open) await refreshPayoutBatch(batch.id);
-  return NextResponse.json({ refreshed: open.length });
+  const batches = await db.select({ id: schema.payoutBatches.id }).from(schema.payoutBatches).where(isNotNull(schema.payoutBatches.paypalBatchId));
+  let failed = 0;
+  for (const batch of batches) {
+    await refreshPayoutBatch(batch.id).catch((error: unknown) => {
+      failed++;
+      console.error("[payouts] could not refresh", batch.id, error);
+    });
+  }
+  const paidOffers = await refreshOffers();
+  return NextResponse.json({ refreshed: batches.length - failed, failed, paidOffers });
 });

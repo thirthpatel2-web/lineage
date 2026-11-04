@@ -105,5 +105,5 @@ export async function sendOffer(offerId: string) {
     .set({ status: "sent", invoiceId: invoice.id, invoiceUrl: invoice.payerUrl })
     .where(eq(schema.offers.id, offer.id))
     .returning();
-  return { ...updated, qrPng: invoice.qrPng };
+  return updated;
 }

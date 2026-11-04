@@ -4,6 +4,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { TOOLS } from "@/lib/agent-tools";
+import { errorResponse } from "@/lib/http";
+import { checkAiBudget } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,6 +37,11 @@ function buildServer() {
 }
 
 async function handle(request: Request) {
+  try {
+    if (request.method === "POST") checkAiBudget(request, 30);
+  } catch (error) {
+    return errorResponse(error);
+  }
   const server = buildServer();
   const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
   await server.connect(transport);

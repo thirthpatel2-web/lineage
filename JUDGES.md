@@ -15,7 +15,7 @@ Sandbox buyer login for PayPal: see the private testing field on Devpost.
 ## 2. Designers get paid (1 min)
 
 1. Open **Royalties** and click **Run payouts now**. Lineage sends one PayPal Payouts batch.
-2. Rows turn **paid** as PayPal confirms them (click **Refresh statuses from PayPal** if needed).
+2. Rows turn **paid** as PayPal confirms them (click **Refresh statuses from PayPal** if needed). **Reconcile with PayPal** compares our ledger with PayPal's records, which can lag by a few hours.
 3. Open the **AG Studio dashboard** and ask the assistant: *"Which designer earned the most, and how much is paid out?"*
 
 ## 3. Agentic commerce (1 min)

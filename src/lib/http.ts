@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { ModelRefusal } from "@/lib/ai/claude";
 import { PayPalError } from "@/lib/paypal";
+import { RateLimited } from "@/lib/rate-limit";
 
 /** Wrap a route handler so every failure becomes a clear JSON error instead of a stack trace. */
 export function route<A extends unknown[]>(handler: (...args: A) => Promise<Response>) {
@@ -15,6 +16,7 @@ export function route<A extends unknown[]>(handler: (...args: A) => Promise<Resp
 }
 
 export function errorResponse(error: unknown) {
+  if (error instanceof RateLimited) return NextResponse.json({ error: error.message }, { status: 429 });
   if (error instanceof ZodError) {
     return NextResponse.json({ error: "Some fields are missing or invalid.", issues: error.issues.map((i) => `${i.path.join(".")}: ${i.message}`) }, { status: 400 });
   }

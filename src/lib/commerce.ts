@@ -4,7 +4,7 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { getDb, schema } from "@/lib/db";
-import { env } from "@/lib/env";
+import { env, mode } from "@/lib/env";
 import { getChain, toLinks } from "@/lib/lineage";
 import { formatCents, fromPayPalValue, licenseAmount, splitRoyalty, splitSale, type Credit } from "@/lib/money";
 import * as paypal from "@/lib/paypal";
@@ -254,4 +254,42 @@ export async function markOfferPaid(invoiceId: string) {
       credits.map((c) => ({ id: newId("cr"), sourceKind: "license" as const, sourceId: offer.id, payeeKind: c.payeeKind, payeeId: c.payeeId, patternId: c.patternId, amountCents: c.amountCents, status: c.payeeKind === "platform" ? ("kept" as const) : ("pending" as const) })),
     );
   });
+}
+
+/** Ask PayPal about every unpaid invoice offer, for setups where webhooks can't reach the app. */
+export async function refreshOffers() {
+  const db = await getDb();
+  const sent = await db.select().from(schema.offers).where(eq(schema.offers.status, "sent"));
+  let paid = 0;
+  for (const offer of sent) {
+    if (!offer.invoiceId) continue;
+    const status = await paypal.getInvoiceStatus(offer.invoiceId).catch(() => "UNKNOWN");
+    if (status === "PAID") {
+      await markOfferPaid(offer.invoiceId);
+      paid++;
+    }
+  }
+  return paid;
+}
+
+/** Compare our captured payments with PayPal's own records (Transaction Search). */
+export async function reconcile() {
+  const db = await getDb();
+  const [licenses, sales, transactions] = await Promise.all([
+    db.select({ id: schema.licenses.id, captureId: schema.licenses.captureId, cents: schema.licenses.amountCents }).from(schema.licenses).where(eq(schema.licenses.status, "captured")),
+    db.select({ id: schema.sales.id, captureId: schema.sales.captureId, cents: schema.sales.amountCents }).from(schema.sales).where(eq(schema.sales.status, "captured")),
+    paypal.searchTransactions(31),
+  ]);
+  const seen = new Map(transactions.map((t) => [t.transaction_info.transaction_id, t.transaction_info]));
+  const ours = [...licenses, ...sales];
+  const matched = ours.filter((r) => r.captureId && seen.has(r.captureId));
+  const mismatched = matched.filter((r) => fromPayPalValue(seen.get(r.captureId!)!.transaction_amount.value.replace(/^-/, "")) !== r.cents);
+  return {
+    live: mode.paypal,
+    captures: ours.length,
+    matched: matched.length,
+    // Transaction Search can lag PayPal by up to three hours, so "not listed yet" is not an error.
+    notListedYet: ours.length - matched.length,
+    amountMismatches: mismatched.map((r) => r.id),
+  };
 }

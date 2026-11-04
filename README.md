@@ -48,9 +48,9 @@ YouTube solved this for video: when Content ID finds a match, the rights holder 
 |---|---|---|
 | **Orders v2** (create, capture) | Maker licenses; Market purchases (including agent-prepared ones) | `src/lib/paypal.ts`, `src/lib/commerce.ts` |
 | **Payouts** | Weekly batch paying every designer and maker their balance by email | `runPayouts()` in `src/lib/commerce.ts` |
-| **Invoicing v2** (create, send, QR) | License offers from the watch agent instead of takedowns | `createAndSendInvoice()` |
+| **Invoicing v2** (create, send, status) | License offers from the watch agent instead of takedowns | `createAndSendInvoice()`, `refreshOffers()` |
 | **Webhooks** + signature verification | `CHECKOUT.ORDER.APPROVED`, `PAYMENT.CAPTURE.COMPLETED`, `INVOICING.INVOICE.PAID`, `PAYMENT.PAYOUTS-ITEM.*` | `src/app/api/webhooks/paypal/route.ts` |
-| **Transaction Search** | Reconciliation helper | `searchTransactions()` |
+| **Transaction Search** | "Reconcile with PayPal" in the console compares every capture with PayPal's records | `reconcile()` |
 
 Money rules, enforced in code (`src/lib/money.ts`, `src/lib/commerce.ts`):
 
@@ -134,11 +134,24 @@ To use the real PayPal sandbox and Claude, copy `.env.example` to `.env.local` a
 Other scripts:
 
 ```bash
-npm test            # money math tests
+npm test            # money math and Claude request tests
+npm run preflight   # real calls to the PayPal sandbox and Claude: run after adding keys
+npm run e2e         # every flow in a browser, against a running server
 npm run eval        # accuracy report
 npm run seed        # (re)load demo data (stop the dev server first when using PGlite)
 npm run build && npm start
 ```
+
+## How it was tested
+
+| Check | Against | Proves |
+|---|---|---|
+| `npm test` | Pure functions, intercepted HTTP | Splits are exact; Claude requests are shaped as documented |
+| `npm run e2e` offline | PGlite, built-in simulator | Every flow works for someone with no keys |
+| `npm run e2e` live paths | Real Postgres, `scripts/mock-services.mjs` | The live PayPal and Claude code handles those services' documented responses |
+| `npm run preflight` | The real PayPal sandbox and Claude API | The real services accept our requests |
+
+The stand-in server is only as accurate as our reading of the docs, so preflight is the check that counts.
 
 ## Deploy
 
@@ -163,7 +176,7 @@ scripts/eval.ts           Accuracy evaluation
 
 - Demo designers, makers and photos are fictional and flagged `demo`. The photos are illustrations generated in code (`src/lib/demo-art.ts`) until real photographed makes replace them. We never scrape marketplaces.
 - "Sample outside marketplace" listings in the agent demo are labelled demo data; with `CHANNEL3_API_KEY` set, outside results come from Channel3.
-- The app has no user accounts: it is a single-tenant demo. Payout and console endpoints are open; put them behind auth before any real use.
+- The app has no user accounts: it is a single-tenant demo. Payout and console endpoints are open so judges can try them; put them behind auth before any real use. Claude-backed endpoints are rate limited, with a daily ceiling (`AI_DAILY_LIMIT`).
 - Whether a designer can restrict finished-item sales is legally unsettled in places. Lineage sells voluntary licenses and never files takedowns.
 
 ## License

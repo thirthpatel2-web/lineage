@@ -11,10 +11,10 @@ export const env = {
   paypal: {
     clientId: read("PAYPAL_CLIENT_ID"),
     clientSecret: read("PAYPAL_CLIENT_SECRET"),
+    // PAYPAL_API_BASE points the client at a stand-in server in contract tests (scripts/mock-services.mjs).
     base:
-      read("PAYPAL_ENV") === "live"
-        ? "https://api-m.paypal.com"
-        : "https://api-m.sandbox.paypal.com",
+      read("PAYPAL_API_BASE") ??
+      (read("PAYPAL_ENV") === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com"),
     webhookId: read("PAYPAL_WEBHOOK_ID"),
     merchantEmail: read("PAYPAL_MERCHANT_EMAIL"),
   },
@@ -23,6 +23,7 @@ export const env = {
   channel3Key: read("CHANNEL3_API_KEY"),
   agStudioKey: read("AG_STUDIO"),
   platformFeeBp: Number(read("PLATFORM_FEE_BP") ?? 1000),
+  aiDailyLimit: Number(read("AI_DAILY_LIMIT") ?? 500),
 };
 
 export const mode = {

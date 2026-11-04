@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 import { getDb, schema } from "@/lib/db";
 import { route } from "@/lib/http";
+import { checkAiBudget } from "@/lib/rate-limit";
 import { storeImage } from "@/lib/images";
 import { runLens } from "@/lib/ai/lens";
 import { getChain } from "@/lib/lineage";
@@ -12,6 +13,7 @@ export const maxDuration = 120;
 
 // A maker's photo in, the matched pattern and its lineage out.
 export const POST = route(async (req: Request) => {
+  checkAiBudget(req);
   const form = await req.formData();
   const file = form.get("photo");
   const sample = form.get("sample");

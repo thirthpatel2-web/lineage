@@ -8,12 +8,20 @@ import { NextResponse } from "next/server";
 import type { AgAiConversationItem, AgAiOutputItem, AgLlmRequest, AgLlmResponse } from "ag-studio";
 import { MODEL, claude } from "@/lib/ai/claude";
 import { mode } from "@/lib/env";
+import { errorResponse } from "@/lib/http";
+import { checkAiBudget } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
 type Msg = Anthropic.Beta.BetaMessageParam;
 type Block = Anthropic.Beta.BetaContentBlockParam;
+
+// AG Studio's history has nowhere to carry Claude's thinking blocks, but a tool round must go back
+// with them intact. So they wait here, keyed by the tool call they came with.
+const globalForThinking = globalThis as unknown as { lineageThinking?: Map<string, Block[]> };
+const thinkingByCall = (globalForThinking.lineageThinking ??= new Map<string, Block[]>());
+const MAX_REMEMBERED_CALLS = 500;
 
 function toMessages(input: AgAiConversationItem[]) {
   const system: string[] = [];
@@ -38,6 +46,7 @@ function toMessages(input: AgAiConversationItem[]) {
       } catch {
         parsed = {};
       }
+      for (const block of thinkingByCall.get(item.callId) ?? []) push("assistant", block);
       push("assistant", { type: "tool_use", id: item.callId, name: item.name, input: parsed as Record<string, unknown> });
     } else if (item.type === "function_call_output") {
       push("user", { type: "tool_result", tool_use_id: item.callId, content: item.output });
@@ -49,6 +58,14 @@ function toMessages(input: AgAiConversationItem[]) {
 
 export async function POST(req: Request) {
   if (!mode.ai) return NextResponse.json({ error: "Set ANTHROPIC_API_KEY to use the AI assistant." }, { status: 503 });
+  // This route spends Claude credit, so it only serves Lineage's own pages, within the demo budget.
+  const origin = req.headers.get("origin");
+  if (origin && new URL(origin).host !== req.headers.get("host")) return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  try {
+    checkAiBudget(req, 30);
+  } catch (error) {
+    return errorResponse(error);
+  }
   const request = (await req.json()) as AgLlmRequest;
   const { system, messages } = toMessages(request.input);
   if (request.instructions) system.unshift(request.instructions);
@@ -67,16 +84,32 @@ export async function POST(req: Request) {
       : (request.tools ?? []).map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters as Anthropic.Beta.BetaTool.InputSchema }));
 
   try {
-    const response = await claude().beta.messages.create({
-      model: MODEL,
-      max_tokens: 16000,
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
-      output_config: { effort: "low" },
-      system: system.join("\n\n"),
-      messages,
-      ...(tools.length > 0 && { tools }),
+    const send = (history: Msg[]) =>
+      claude().beta.messages.create({
+        model: MODEL,
+        max_tokens: 16000,
+        betas: ["server-side-fallback-2026-07-01"],
+        fallbacks: "default",
+        output_config: { effort: "low" },
+        system: system.join("\n\n"),
+        messages: history,
+        ...(tools.length > 0 && { tools }),
+      });
+    // Studio can change its instructions between turns, which invalidates earlier thinking blocks.
+    // The documented recovery is to strip them all and retry once.
+    const response = await send(messages).catch((error: unknown) => {
+      if (error instanceof Anthropic.BadRequestError && /thinking/i.test(error.message)) return send(withoutThinking(messages));
+      throw error;
     });
+
+    const thinking = response.content.filter((b) => b.type === "thinking" || b.type === "redacted_thinking") as Block[];
+    for (const block of response.content) {
+      if (block.type === "tool_use" && thinking.length > 0) {
+        thinkingByCall.set(block.id, thinking);
+        break;
+      }
+    }
+    if (thinkingByCall.size > MAX_REMEMBERED_CALLS) thinkingByCall.delete(thinkingByCall.keys().next().value!);
 
     const output: AgAiOutputItem[] = [];
     const text = response.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("\n").trim();
@@ -103,6 +136,10 @@ export async function POST(req: Request) {
     const message = error instanceof Anthropic.APIError ? `Claude API ${error.status}: ${error.message}` : error instanceof Error ? error.message : String(error);
     return NextResponse.json({ id: "error", createdAt: Date.now(), status: "failed", error: { code: "api_error", message }, output: [] } satisfies AgLlmResponse, { status: 200 });
   }
+}
+
+function withoutThinking(messages: Msg[]): Msg[] {
+  return messages.map((m) => (m.role !== "system" && Array.isArray(m.content) ? ({ ...m, content: (m.content as Block[]).filter((b) => b.type !== "thinking" && b.type !== "redacted_thinking") } as Msg) : m));
 }
 
 // Without schema-constrained decoding, strip any code fences around a JSON reply.

@@ -69,8 +69,10 @@ export async function seedDemo(log: (line: string) => void = () => {}) {
   const db = await getDb();
   const consentAt = new Date();
 
+  // Sandbox payouts only show as paid when they reach a real sandbox account.
+  const payee = process.env.DEMO_PAYEE_EMAIL?.trim();
   for (const d of DESIGNERS) {
-    await db.insert(schema.designers).values({ ...d, consentAt, demo: true }).onConflictDoNothing();
+    await db.insert(schema.designers).values({ ...d, paypalEmail: payee || d.paypalEmail, consentAt, demo: true }).onConflictDoNothing();
   }
   for (const { design, ...p } of PATTERNS) {
     const inserted = await db.insert(schema.patterns).values(p).onConflictDoNothing().returning();
@@ -81,7 +83,7 @@ export async function seedDemo(log: (line: string) => void = () => {}) {
     log(`pattern  ${p.title}`);
   }
   for (const m of MAKERS) {
-    await db.insert(schema.makers).values({ ...m, demo: true }).onConflictDoNothing();
+    await db.insert(schema.makers).values({ ...m, paypalEmail: payee || m.paypalEmail, demo: true }).onConflictDoNothing();
   }
   for (const { design, seed, ...l } of LISTINGS) {
     const exists = await db.query.listings.findFirst({ where: eq(schema.listings.id, l.id) });

@@ -4,6 +4,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import { getDb, schema } from "@/lib/db";
 import { route } from "@/lib/http";
+import { checkAiBudget } from "@/lib/rate-limit";
 import { storeImage } from "@/lib/images";
 import { wouldCycle } from "@/lib/lineage";
 
@@ -28,6 +29,7 @@ const Fields = z.object({
 
 // Register a designer (or reuse one by PayPal email) and a pattern with its reference photos.
 export const POST = route(async (req: Request) => {
+  checkAiBudget(req);
   const form = await req.formData();
   const fields = Fields.parse(Object.fromEntries([...form.entries()].filter(([, v]) => typeof v === "string")));
   const photos = form.getAll("photos").filter((f): f is File => f instanceof File && f.size > 0);

@@ -52,9 +52,10 @@ export function RoyaltyConsole({ data, paypalLive }: { data: ConsoleData; paypal
     const res = await fetch(path, { method: "POST" });
     const json = await res.json();
     if (!res.ok) setMessage(json.error ?? "Failed");
+    else if ("captures" in json) setMessage(json.live ? `Checked ${json.captures} payments against PayPal: ${json.matched} matched, ${json.notListedYet} not listed yet (PayPal's search can lag by hours), ${json.amountMismatches.length} amount mismatches.` : "Reconciliation compares with PayPal's records, so it needs sandbox keys.");
     else if (json.batch === null) setMessage(`Nobody has reached the $1.00 payout minimum yet.`);
     else if (json.batch) setMessage(`Sent PayPal Payouts batch ${json.batch.senderBatchId}: ${json.batch.items} payees, $${(json.batch.totalCents / 100).toFixed(2)}.`);
-    else setMessage(`Refreshed ${json.refreshed} batch(es) from PayPal.`);
+    else setMessage(`Refreshed ${json.refreshed} batch(es) from PayPal${json.paidOffers ? `, ${json.paidOffers} invoice(s) newly paid` : ""}${json.failed ? `; ${json.failed} could not be read` : ""}.`);
     setBusy(null);
     router.refresh();
   }
@@ -117,6 +118,9 @@ export function RoyaltyConsole({ data, paypalLive }: { data: ConsoleData; paypal
         </button>
         <button className="btn btn-ghost" disabled={busy !== null} onClick={() => act("/api/payouts/refresh", "refresh")}>
           {busy === "refresh" ? "Checking PayPal…" : "Refresh statuses from PayPal"}
+        </button>
+        <button className="btn btn-ghost" disabled={busy !== null} onClick={() => act("/api/payouts/reconcile", "reconcile")}>
+          {busy === "reconcile" ? "Comparing with PayPal…" : "Reconcile with PayPal"}
         </button>
         <span className="text-sm text-muted">{paypalLive ? "PayPal sandbox Payouts API" : "Simulated PayPal (no keys)"}</span>
         {message && <span className="rounded-lg bg-sunk px-3 py-1.5 text-sm">{message}</span>}

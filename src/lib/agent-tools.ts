@@ -2,6 +2,8 @@
 // in-app shopping agent. Agents can look things up and prepare payments, but every PayPal charge
 // needs a person to approve it at the returned link.
 
+import { lookup } from "node:dns/promises";
+import { isIP } from "node:net";
 import { and, eq, gt, ilike, lte, or } from "drizzle-orm";
 import { z } from "zod";
 import { getDb, schema } from "@/lib/db";
@@ -32,17 +34,41 @@ async function loadImage(url: string): Promise<Buffer> {
     if (art && art[1] in DESIGNS) return renderJpeg(art[1] as DesignKey, Number(art[2]));
     throw new Error("Unsupported local image URL");
   }
-  const parsed = new URL(url);
-  if (parsed.protocol !== "https:") throw new Error("Only https image URLs are accepted");
-  if (/^(localhost|127\.|10\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|\[?::1\]?|0\.)/i.test(parsed.hostname)) {
-    throw new Error("Private addresses are not allowed");
+  return fetchPublicImage(url);
+}
+
+// Agents can pass any URL, so every hop is resolved and checked before we connect to it.
+async function assertPublicHost(url: URL) {
+  if (url.protocol !== "https:") throw new Error("Only https image URLs are accepted");
+  const addresses = await lookup(url.hostname.replace(/^\[|\]$/g, ""), { all: true });
+  for (const { address } of addresses) {
+    const v4 = address.replace(/^::ffff:/i, "");
+    const blocked =
+      isIP(v4) === 4
+        ? /^(0\.|10\.|127\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.)/.test(v4)
+        : /^(::1?$|f[cd]|fe[89ab])/i.test(address);
+    if (blocked) throw new Error("Private addresses are not allowed");
   }
-  const res = await fetch(parsed, { redirect: "follow", signal: AbortSignal.timeout(10_000) });
-  if (!res.ok) throw new Error(`Could not fetch image (${res.status})`);
-  if (!res.headers.get("content-type")?.startsWith("image/")) throw new Error("URL is not an image");
-  const buffer = Buffer.from(await res.arrayBuffer());
-  if (buffer.byteLength > MAX_BYTES) throw new Error("Image is larger than 12 MB");
-  return buffer;
+}
+
+async function fetchPublicImage(start: string): Promise<Buffer> {
+  let url = new URL(start);
+  for (let hop = 0; hop < 4; hop++) {
+    await assertPublicHost(url);
+    const res = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(10_000) });
+    const next = res.status >= 300 && res.status < 400 ? res.headers.get("location") : null;
+    if (next) {
+      url = new URL(next, url);
+      continue;
+    }
+    if (!res.ok) throw new Error(`Could not fetch image (${res.status})`);
+    if (!res.headers.get("content-type")?.startsWith("image/")) throw new Error("URL is not an image");
+    if (Number(res.headers.get("content-length") ?? 0) > MAX_BYTES) throw new Error("Image is larger than 12 MB");
+    const buffer = Buffer.from(await res.arrayBuffer());
+    if (buffer.byteLength > MAX_BYTES) throw new Error("Image is larger than 12 MB");
+    return buffer;
+  }
+  throw new Error("Too many redirects");
 }
 
 // --- Shared summaries ---------------------------------------------------------------
@@ -192,7 +218,8 @@ export async function findLicensedItems(input: z.infer<typeof findItemsInput>) {
     .where(and(gt(schema.listings.stock, 0), text, input.max_price_usd ? lte(schema.listings.priceCents, Math.round(input.max_price_usd * 100)) : undefined))
     .limit(10);
 
-  const lineageListings = rows.map((r) => ({
+  const relevance = (r: (typeof rows)[number]) => words.filter((w) => `${r.listing.title} ${r.pattern.title}`.toLowerCase().includes(w.toLowerCase())).length;
+  const lineageListings = [...rows].sort((a, b) => relevance(b) - relevance(a)).map((r) => ({
     listing_id: r.listing.id,
     title: r.listing.title,
     price: formatCents(r.listing.priceCents),
