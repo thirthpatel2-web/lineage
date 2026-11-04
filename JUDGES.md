@@ -33,7 +33,7 @@ Sandbox buyer login for PayPal: see the private testing field on Devpost.
 ## Run it yourself
 
 ```bash
-git clone REPO_URL_HERE && cd lineage
+git clone https://github.com/thirthpatel2-web/lineage && cd lineage
 npm install && npm run dev
 ```
 

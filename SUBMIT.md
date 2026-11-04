@@ -41,11 +41,12 @@ npm run e2e         # in a second terminal; every flow, in a browser (pauses are
 
 ## 3. Publish the code (2 min)
 
-```bash
-gh repo create lineage --public --source . --push
-```
+The code is already in a private repo (github.com/thirthpatel2-web/lineage), with your email replaced by GitHub's no-reply address. Before submitting, make it public and push any later commits:
 
-This publishes the code and its commit history, including the name and email on each commit. To change the email first, tell Claude Code which address to use.
+```bash
+gh repo edit --visibility public --accept-visibility-change-consequences
+git push
+```
 
 ## 4. Deploy (15 min, optional but recommended)
 
@@ -75,7 +76,7 @@ Only use photos and patterns you made or have written permission for.
 
 ## 6. Video (1-2 hours)
 
-Follow `docs/VIDEO_SCRIPT.md`. Must be under 3:00, public on YouTube, and show real sandbox payments. Use no copyrighted music or third-party trademarks without permission, and make the takedown notice in the opening shot a made-up one.
+Follow `docs/VIDEO_SCRIPT.md`. `lineage-demo-draft.mp4`, next to this folder, is a narrated offline-mode rehearsal. It shows simulated PayPal and says so, so record a real one once your keys work. Must be under 3:00, public on YouTube, and show real sandbox payments. Use no copyrighted music or third-party trademarks without permission, and make the takedown notice in the opening shot a made-up one.
 
 ## 7. Devpost (20 min)
 

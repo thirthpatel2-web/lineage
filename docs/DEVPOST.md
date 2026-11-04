@@ -81,7 +81,7 @@ nextjs, typescript, react, tailwindcss, postgresql, drizzle, pglite, paypal-orde
 ## Links
 
 - Demo: APP_URL_HERE
-- Code: REPO_URL_HERE
+- Code: https://github.com/thirthpatel2-web/lineage
 - Video: VIDEO_URL_HERE
 
 ## Prize categories we're entering
