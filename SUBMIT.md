@@ -1,6 +1,8 @@
 # Submission checklist
 
-Deadline: **Nov 12, 2026, 12:00 PM Pacific (Nov 13, 01:30 IST)**. Confirm it on the Devpost page, and submit a day early.
+Deadline: **Nov 12, 2026, 12:00 PM Pacific (Nov 13, 01:30 IST)**, confirmed in the official rules. Submit a day early.
+
+What the rules require: a public repo with a license GitHub detects (MIT is included), a text description, a YouTube video under 3:00 showing the project working, and a working demo judges can use. **Hosting is optional**: complete setup instructions also count, but judges may only watch the video, and a link is far easier for them.
 
 Everything below needs your accounts, so it can't be done from code. Work top to bottom.
 
@@ -45,7 +47,7 @@ gh repo create lineage --public --source . --push
 
 This publishes the code and its commit history, including the name and email on each commit. To change the email first, tell Claude Code which address to use.
 
-## 4. Deploy (15 min)
+## 4. Deploy (15 min, optional but recommended)
 
 Render > New > Blueprint > pick the repo. It reads `render.yaml`. In the dashboard set `APP_URL` (on both the web service and the cron job), the keys from step 1 and `DEMO_PAYEE_EMAIL`.
 
@@ -55,6 +57,8 @@ Then add a webhook in your PayPal app:
 - Events: `CHECKOUT.ORDER.APPROVED`, `PAYMENT.CAPTURE.COMPLETED`, `INVOICING.INVOICE.PAID`, `PAYMENT.PAYOUTS-ITEM.SUCCEEDED`, `.UNCLAIMED`, `.RETURNED`, `.FAILED`, `.BLOCKED`
 
 Put its id in `PAYPAL_WEBHOOK_ID` on Render. Open the site in a private window and run through `JUDGES.md`.
+
+The rules require the project to stay testable, free, until judging ends on **Dec 15, 2026**. Keep the service running and the Claude account funded until then.
 
 ## 5. Real photos (the biggest quality jump)
 
@@ -71,7 +75,7 @@ Only use photos and patterns you made or have written permission for.
 
 ## 6. Video (1-2 hours)
 
-Follow `docs/VIDEO_SCRIPT.md`. Must be under 3:00, public on YouTube, and show real sandbox payments.
+Follow `docs/VIDEO_SCRIPT.md`. Must be under 3:00, public on YouTube, and show real sandbox payments. Use no copyrighted music or third-party trademarks without permission, and make the takedown notice in the opening shot a made-up one.
 
 ## 7. Devpost (20 min)
 
@@ -79,10 +83,10 @@ Follow `docs/VIDEO_SCRIPT.md`. Must be under 3:00, public on YouTube, and show r
 2. Read the **Before you paste** box at the top of `docs/DEVPOST.md` and delete anything that isn't true yet.
 3. Paste each section. Upload `docs/screenshots/*` to the gallery (retake them from the deployed site first, so the header shows the live badges: `node scripts/gallery.mjs`).
 4. Put a sandbox buyer login in Devpost's private testing field, never in the repo.
-5. Check the official rules once for eligibility (your country and age) and team details.
+5. Check you're of legal age where you live. If you're entering as a team, one person submits as the Representative. India isn't on the rules' excluded list.
 6. Submit, then open the public page in a private window and check every link.
 
 ## Optional
 
-- `AG_STUDIO`: a licence key removes the watermark in AG Studio. Ask AG Grid; it may matter for their prize.
+- `AG_STUDIO`: a licence key removes the watermark in AG Studio. The prize is "Best Use of AG Grid" and covers any AG Grid tools.
 - `CHANNEL3_API_KEY`: real outside listings for the shopping agent. Without it the agent uses labelled sample listings. The Channel3 integration has never run against the real API, so test it before you mention it.

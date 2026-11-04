@@ -86,4 +86,4 @@ nextjs, typescript, react, tailwindcss, postgresql, drizzle, pglite, paypal-orde
 
 ## Prize categories we're entering
 
-Best Overall · Most Creative · Best Use of Agentic Commerce · Best Use of PayPal + AI · AG Grid: Best Use of AG Studio
+Best Overall · Most Creative · Best Use of Agentic Commerce · Best Use of PayPal + AI · Best Use of AG Grid
