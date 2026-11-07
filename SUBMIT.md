@@ -19,7 +19,7 @@ DEMO_PAYEE_EMAIL=               # a sandbox PERSONAL account email; demo payouts
 GEMINI_API_KEY=                 # free, from aistudio.google.com/apikey (no billing)
 ```
 
-Get them at developer.paypal.com > Apps & Credentials (Sandbox), and console.anthropic.com. In the PayPal app's features, turn on **Payouts**, **Invoicing** and **Transaction search**. Check that the sandbox business account has a balance.
+Get them at developer.paypal.com > Apps & Credentials (Sandbox), and a free Gemini key at aistudio.google.com/apikey. In the PayPal app's features, turn on **Payouts**, **Invoicing** and **Transaction search**. Create the app on a **US** sandbox business account: PayPal refuses payouts sent from some regions (an India-region sandbox account gets "not allowed to send this payout"). If you turn on features after first using the keys, PayPal keeps handing out the old token for hours; restart the app, or revoke it with `POST /v1/oauth2/token/terminate`, so a new token picks up the features. Check that the sandbox business account has a balance.
 
 ## 2. Prove the real services work (5 min)
 

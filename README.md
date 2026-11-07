@@ -131,7 +131,7 @@ That's all. Without a `DATABASE_URL`, Lineage uses an embedded Postgres (PGlite)
 
 To use the real PayPal sandbox and AI, copy `.env.example` to `.env.local` and fill it in:
 
-1. **PayPal sandbox app**: [developer.paypal.com](https://developer.paypal.com/dashboard/applications/sandbox) > Apps & Credentials > create an app. Copy the client id and secret into `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET`, and put the sandbox **business** account email in `PAYPAL_MERCHANT_EMAIL`. In the app's features, make sure **Payouts**, **Invoicing** and **Transaction search** are on.
+1. **PayPal sandbox app**: [developer.paypal.com](https://developer.paypal.com/dashboard/applications/sandbox) > Apps & Credentials > create an app. Copy the client id and secret into `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET`, and put the sandbox **business** account email in `PAYPAL_MERCHANT_EMAIL`. In the app's features, make sure **Payouts**, **Invoicing** and **Transaction search** are on. Use a **US** sandbox business account: PayPal refuses payouts from some regions.
 2. **Sandbox accounts**: create a sandbox **personal** account to pay with. For payouts to show as claimed, set the demo designers' and makers' PayPal emails to sandbox personal accounts too.
 3. **Webhooks** (deployed URL only): add `https://<your-app>/api/webhooks/paypal` with the events `CHECKOUT.ORDER.APPROVED`, `PAYMENT.CAPTURE.COMPLETED`, `INVOICING.INVOICE.PAID` and `PAYMENT.PAYOUTS-ITEM.*`, and put the webhook id in `PAYPAL_WEBHOOK_ID`. Locally the return URL and the "Refresh statuses" button cover the same ground.
 4. **AI (free)**: create a free API key at [aistudio.google.com](https://aistudio.google.com/apikey) and set `GEMINI_API_KEY`. No card or billing is needed. Optionally, set `ANTHROPIC_API_KEY` instead to use Claude, which is paid.
@@ -154,7 +154,7 @@ npm run build && npm start
 | `npm test` | Pure functions, intercepted HTTP | Splits are exact; private addresses are refused; AI requests are shaped as documented |
 | `npm run e2e` offline | PGlite, built-in simulator | Every flow works for someone with no keys |
 | `npm run e2e` live paths | Real Postgres, `scripts/mock-services.mjs` | The live PayPal and Claude code paths handle those services' documented responses |
-| `npm run preflight` | The real PayPal sandbox and the Gemini API | The real services accept our requests (passing for orders, invoices, Transaction Search and Gemini vision; see SUBMIT.md for the Payouts region note) |
+| `npm run preflight` | The real PayPal sandbox and the Gemini API | The real services accept our requests (all passing on Nov 7: orders, invoices, payouts, Transaction Search, Gemini vision; webhooks need a deployed URL) |
 
 The stand-in server is only as accurate as our reading of the docs, so preflight is the check that counts.
 
