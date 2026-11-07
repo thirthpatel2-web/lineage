@@ -189,7 +189,9 @@ export async function runPayouts() {
 
   const batchId = newId("pb");
   const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(schema.payoutBatches);
-  const senderBatchId = `lin-${isoWeek(new Date())}-${String(Number(count) + 1).padStart(3, "0")}`;
+  // PayPal refuses a sender_batch_id it has seen before, even from a database that was since reset,
+  // so the readable week and sequence get a random suffix. Our own reservation stops double payouts.
+  const senderBatchId = `lin-${isoWeek(new Date())}-${String(Number(count) + 1).padStart(3, "0")}-${nanoid(6)}`;
   const items = due.map((b) => {
     const p = payee(b)!;
     return {
