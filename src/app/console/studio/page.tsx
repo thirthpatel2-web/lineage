@@ -18,7 +18,7 @@ export default async function StudioPage() {
           <h1 className="text-3xl font-extrabold">Royalty dashboard</h1>
         </div>
         <div className="flex items-center gap-3 text-sm text-muted">
-          {mode.ai ? <span className="pill pill-good">Ask Claude to build charts</span> : <span className="pill pill-warn">AI assistant needs ANTHROPIC_API_KEY</span>}
+          {mode.ai ? <span className="pill pill-good">Ask Claude to build charts</span> : <span className="pill pill-plain">AI chart builder is off in demo mode</span>}
           <Link href="/console" className="btn btn-ghost">Back to console</Link>
         </div>
       </div>

@@ -29,7 +29,7 @@ await page.goto(`${base}/patterns/pat_astro_bunny`, { waitUntil: "networkidle" }
 await shot("7-pattern-lineage");
 await page.goto(`${base}/eval`, { waitUntil: "networkidle" });
 await shot("8-accuracy");
-const lic = await page.evaluate(async () => (await (await fetch("/api/checkout/license", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ patternId: "pat_astro_bunny", units: 12, itemPriceCents: 4000, maker: { id: "mkr_ana" } }) })).json()));
+const lic = await page.evaluate(async () => (await (await fetch("/api/checkout/license", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ patternId: "pat_astro_bunny", units: 10, itemPriceCents: 4000, maker: { id: "mkr_ana" } }) })).json()));
 await page.goto(lic.approveUrl);
 await page.getByRole("button", { name: "Pay now" }).click();
 await page.waitForURL(/licenses\/lic_/);

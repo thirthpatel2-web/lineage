@@ -10,9 +10,14 @@ export async function POST(req: Request) {
   const form = await req.formData();
   const token = String(form.get("token") ?? "");
   const returnUrl = String(form.get("return") ?? "");
-  if (!returnUrl.startsWith(env.appUrl)) return NextResponse.json({ error: "Bad return URL" }, { status: 400 });
+  let next: URL;
+  try {
+    next = new URL(returnUrl);
+  } catch {
+    return NextResponse.json({ error: "Bad return URL" }, { status: 400 });
+  }
+  if (next.origin !== new URL(env.appUrl).origin) return NextResponse.json({ error: "Bad return URL" }, { status: 400 });
   simulatePayerApproval(token);
-  const next = new URL(returnUrl);
   next.searchParams.set("token", token);
   return NextResponse.redirect(next, 303);
 }

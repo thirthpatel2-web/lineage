@@ -26,7 +26,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
-      {sp.error && <div className="mb-4 rounded-xl bg-accent-soft p-4 text-accent">Payment problem: {sp.error}</div>}
+      {sp.error && <div className="mb-4 rounded-xl bg-accent-soft p-4 text-accent">We couldn&apos;t confirm the payment with PayPal. If you approved it, use &ldquo;I&apos;ve paid: check PayPal&rdquo; below, or try again.</div>}
       <span className={`pill ${paid ? "pill-good" : "pill-warn"}`}>{paid ? "Paid" : "Awaiting payment"}</span>
       {sale.source === "agent" && <span className="pill pill-plain ml-2">Bought through an AI agent</span>}
       <h1 className="mt-3 text-4xl font-extrabold">{paid ? "Thank you!" : "Almost there"}</h1>

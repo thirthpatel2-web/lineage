@@ -18,7 +18,7 @@ export default async function OffersPage() {
   ]);
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
-      <div className="eyebrow">For designers · watch agent</div>
+      <div className="eyebrow">For designers</div>
       <h1 className="mt-3 text-5xl font-extrabold">Offer a license, not a takedown</h1>
       <p className="mt-3 max-w-3xl text-muted">
         Found someone selling your design? Paste the listing and its photo. Lineage confirms it really was made from your pattern (and refuses when it

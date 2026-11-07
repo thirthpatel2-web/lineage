@@ -32,7 +32,7 @@ export default async function LicensePage({ params, searchParams }: { params: Pr
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
       <div className="no-print">
-        {sp.error && <div className="mb-4 rounded-xl bg-accent-soft p-4 text-accent">Payment problem: {sp.error}</div>}
+        {sp.error && <div className="mb-4 rounded-xl bg-accent-soft p-4 text-accent">We couldn&apos;t confirm the payment with PayPal. If you approved it, use &ldquo;I&apos;ve paid: check PayPal&rdquo; below, or try again.</div>}
         {sp.cancelled && <div className="mb-4 rounded-xl bg-warn-soft p-4 text-warn">You cancelled at PayPal. Nothing was charged.</div>}
       </div>
       <div className="flex flex-wrap items-center gap-3">
@@ -69,7 +69,7 @@ export default async function LicensePage({ params, searchParams }: { params: Pr
                 <li key={c.id} className="flex items-center justify-between gap-3">
                   <span>{c.payeeKind === "platform" ? "Lineage fee" : chain.find((p) => p.designerId === c.payeeId)?.designer.name}</span>
                   <span className="flex items-center gap-2">
-                    <span className={`pill ${c.status === "paid" ? "pill-good" : "pill-plain"}`}>{c.payeeKind === "platform" ? "kept" : c.status === "pending" ? "next payout" : c.status.replace("_", " ")}</span>
+                    <span className={`pill ${c.status === "paid" ? "pill-good" : "pill-plain"}`}>{c.payeeKind === "platform" ? "kept" : c.status === "pending" ? "paid in the next PayPal payout" : c.status.replace("_", " ")}</span>
                     <span className="font-mono tabular-nums">{formatCents(c.amountCents)}</span>
                   </span>
                 </li>
@@ -91,15 +91,18 @@ export default async function LicensePage({ params, searchParams }: { params: Pr
               <h2 className="text-3xl font-extrabold">Provenance tags</h2>
               <p className="text-muted">Print these and attach one to each item. Buyers scan to see who designed it.</p>
             </div>
-            <Link href={`/licenses/${license.id}/print`} className="btn">Print tags</Link>
+            <div className="flex gap-2">
+              <Link href={`/t/${license.id}-1`} className="btn btn-ghost">Preview what a buyer sees →</Link>
+              <Link href={`/licenses/${license.id}/print`} className="btn">Print tags</Link>
+            </div>
           </div>
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
             {tags.map((url, i) => (
-              <div key={url} className="card flex flex-col items-center gap-1 p-3 text-center">
+              <Link key={url} href={url.replace(/^https?:\/\/[^/]+/, "")} className="card flex flex-col items-center gap-1 p-3 text-center transition hover:border-accent">
                 <Qr url={url} size={96} />
                 <div className="font-display text-sm font-bold">{chain[0].title}</div>
                 <div className="text-[0.7rem] text-muted">Licensed · #{i + 1}</div>
-              </div>
+              </Link>
             ))}
           </div>
         </section>

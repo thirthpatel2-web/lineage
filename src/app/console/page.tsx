@@ -20,7 +20,7 @@ export default async function ConsolePage() {
             Every royalty Lineage records, written only after PayPal confirms a capture, and every PayPal Payouts batch that settled it.
           </p>
         </div>
-        <Link href="/console/studio" className="btn btn-accent">Open the AG Studio dashboard</Link>
+        <Link href="/console/studio" className="btn btn-accent">Open charts (AG Studio)</Link>
       </div>
       <RoyaltyConsole data={data} paypalLive={mode.paypal} />
     </div>

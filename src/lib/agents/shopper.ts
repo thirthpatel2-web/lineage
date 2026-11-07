@@ -58,7 +58,7 @@ async function withClaude(prompt: string, steps: Step[]) {
   const runner = claude().beta.messages.toolRunner({
     model: MODEL,
     max_tokens: 16000,
-    max_iterations: 12,
+    max_iterations: 8,
     betas: ["server-side-fallback-2026-07-01"],
     fallbacks: "default",
     output_config: { effort: "medium" },
@@ -101,7 +101,7 @@ async function scripted(prompt: string, steps: Step[]) {
 
   const pick = found.lineage_market[0];
   if (!pick) return `I couldn't find a licensed item matching that${max ? ` under $${max}` : ""}.${skipped.length ? ` I skipped ${skipped.join("; ")}` : ""}`;
-  const wantsToBuy = /\bbuy|order|purchase|get it\b/i.test(prompt);
+  const wantsToBuy = /\b(buy|order|purchase|get it)\b/i.test(prompt);
   let link = "";
   if (wantsToBuy) {
     const checkout = await buyItem({ listing_id: pick.listing_id });

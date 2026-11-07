@@ -3,7 +3,7 @@ import { nanoid } from "nanoid";
 import { getDb, schema } from "@/lib/db";
 import { route } from "@/lib/http";
 import { checkAiBudget } from "@/lib/rate-limit";
-import { storeImage } from "@/lib/images";
+import { readUpload, storeImage } from "@/lib/images";
 import { runLens } from "@/lib/ai/lens";
 import { getChain } from "@/lib/lineage";
 import { firstImageIds } from "@/lib/queries";
@@ -18,7 +18,7 @@ export const POST = route(async (req: Request) => {
   const file = form.get("photo");
   const sample = form.get("sample");
   let bytes: Buffer;
-  if (file instanceof File && file.size > 0) bytes = Buffer.from(await file.arrayBuffer());
+  if (file instanceof File && file.size > 0) bytes = await readUpload(file);
   else if (typeof sample === "string" && /^\/api\/demo-art\/[\w-]+\/\d+$/.test(sample)) {
     const [, , , design, seed] = sample.split("/");
     const { renderJpeg } = await import("@/lib/demo-art");

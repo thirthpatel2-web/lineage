@@ -52,6 +52,8 @@ YouTube solved this for video: when Content ID finds a match, the rights holder 
 | **Webhooks** + signature verification | `CHECKOUT.ORDER.APPROVED`, `PAYMENT.CAPTURE.COMPLETED`, `INVOICING.INVOICE.PAID`, `PAYMENT.PAYOUTS-ITEM.*` | `src/app/api/webhooks/paypal/route.ts` |
 | **Transaction Search** | "Reconcile with PayPal" in the console compares every capture with PayPal's records | `reconcile()` |
 
+Why one platform account plus Payouts, rather than splitting each payment at checkout: royalties are often a few cents per item and are spread across several designers up a remix chain, so each payment would need many tiny splits. Many indie designers also have personal PayPal accounts, not the business accounts a checkout split pays into. Collecting once and paying everyone's combined balance in a weekly Payouts batch keeps fees and friction down, and a designer only needs an email address.
+
 Money rules, enforced in code (`src/lib/money.ts`, `src/lib/commerce.ts`):
 
 - Integer cents everywhere; shares in basis points; every split sums exactly (tested with 2,000 random splits).

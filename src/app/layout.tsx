@@ -7,6 +7,7 @@ import "@fontsource/jetbrains-mono/400.css";
 import "@fontsource/jetbrains-mono/600.css";
 import { mode } from "@/lib/env";
 import { Logo } from "@/components/logo";
+import { NavLinks } from "@/components/nav-links";
 import "./globals.css";
 
 
@@ -19,8 +20,8 @@ const NAV = [
   { href: "/snap", label: "Snap & license" },
   { href: "/market", label: "Market" },
   { href: "/agent", label: "Agents" },
-  { href: "/patterns", label: "Patterns" },
   { href: "/console", label: "Royalties" },
+  { href: "/patterns", label: "Patterns" },
   { href: "/offers", label: "Offers" },
   { href: "/eval", label: "Accuracy" },
 ];
@@ -34,17 +35,19 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <Link href="/" className="flex items-center gap-2 font-display text-xl font-extrabold">
               <Logo /> Lineage
             </Link>
-            <nav aria-label="Main" className="flex min-w-0 flex-1 gap-1 overflow-x-auto [scrollbar-width:none]">
-              {NAV.map((n) => (
-                <Link key={n.href} href={n.href} className="whitespace-nowrap rounded-full px-3 py-1.5 text-sm text-muted hover:bg-sunk hover:text-ink">
-                  {n.label}
-                </Link>
-              ))}
-            </nav>
-            <div className="hidden items-center gap-2 lg:flex" title="Which integrations are live">
-              <span className={`pill ${mode.paypal ? "pill-good" : "pill-warn"}`}>{mode.paypal ? "PayPal sandbox" : "PayPal simulated"}</span>
-              <span className={`pill ${mode.ai ? "pill-good" : "pill-warn"}`}>{mode.ai ? "Claude vision on" : "Embeddings only"}</span>
-            </div>
+            <NavLinks items={NAV} />
+            {mode.paypal && mode.ai ? (
+              <span className="pill pill-good shrink-0" title="Payments use the real PayPal sandbox and matching uses Claude vision. No real money moves.">
+                PayPal sandbox · Claude
+              </span>
+            ) : (
+              <span
+                className="pill pill-plain shrink-0"
+                title={`${mode.paypal ? "Payments use the real PayPal sandbox." : "Payments use a built-in PayPal stand-in."} ${mode.ai ? "Matching uses Claude vision." : "Matching uses image similarity only, without Claude."} No real money moves.`}
+              >
+                Demo mode
+              </span>
+            )}
           </div>
         </header>
         <main className="flex-1">{children}</main>
@@ -53,7 +56,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <span>
               Lineage · PayPal AI Hackathon 2026 · Designed &amp; built by <strong className="text-ink">Thirth Patel</strong>
             </span>
-            <span className="font-mono text-xs">PayPal sandbox only. No real money moves.</span>
+            <span className="font-mono text-xs">Test payments only. No real money moves.</span>
           </div>
         </footer>
       </body>

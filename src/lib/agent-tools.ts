@@ -2,8 +2,6 @@
 // in-app shopping agent. Agents can look things up and prepare payments, but every PayPal charge
 // needs a person to approve it at the returned link.
 
-import { lookup } from "node:dns/promises";
-import { isIP } from "node:net";
 import { and, eq, gt, ilike, lte, or } from "drizzle-orm";
 import { z } from "zod";
 import { getDb, schema } from "@/lib/db";
@@ -14,10 +12,9 @@ import { prepareImage } from "@/lib/images";
 import { getChain, toLinks } from "@/lib/lineage";
 import { formatCents, licenseAmount, splitRoyalty } from "@/lib/money";
 import { startLicenseCheckout, startSaleCheckout } from "@/lib/commerce";
+import { fetchPublicImage } from "@/lib/safe-fetch";
 
 // --- Fetching images safely ---------------------------------------------------------
-
-const MAX_BYTES = 12 * 1024 * 1024;
 
 async function loadImage(url: string): Promise<Buffer> {
   // Our own images and demo art are read directly, never over HTTP.
@@ -37,40 +34,6 @@ async function loadImage(url: string): Promise<Buffer> {
   return fetchPublicImage(url);
 }
 
-// Agents can pass any URL, so every hop is resolved and checked before we connect to it.
-async function assertPublicHost(url: URL) {
-  if (url.protocol !== "https:") throw new Error("Only https image URLs are accepted");
-  const addresses = await lookup(url.hostname.replace(/^\[|\]$/g, ""), { all: true });
-  for (const { address } of addresses) {
-    const v4 = address.replace(/^::ffff:/i, "");
-    const blocked =
-      isIP(v4) === 4
-        ? /^(0\.|10\.|127\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.)/.test(v4)
-        : /^(::1?$|f[cd]|fe[89ab])/i.test(address);
-    if (blocked) throw new Error("Private addresses are not allowed");
-  }
-}
-
-async function fetchPublicImage(start: string): Promise<Buffer> {
-  let url = new URL(start);
-  for (let hop = 0; hop < 4; hop++) {
-    await assertPublicHost(url);
-    const res = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(10_000) });
-    const next = res.status >= 300 && res.status < 400 ? res.headers.get("location") : null;
-    if (next) {
-      url = new URL(next, url);
-      continue;
-    }
-    if (!res.ok) throw new Error(`Could not fetch image (${res.status})`);
-    if (!res.headers.get("content-type")?.startsWith("image/")) throw new Error("URL is not an image");
-    if (Number(res.headers.get("content-length") ?? 0) > MAX_BYTES) throw new Error("Image is larger than 12 MB");
-    const buffer = Buffer.from(await res.arrayBuffer());
-    if (buffer.byteLength > MAX_BYTES) throw new Error("Image is larger than 12 MB");
-    return buffer;
-  }
-  throw new Error("Too many redirects");
-}
-
 // --- Shared summaries ---------------------------------------------------------------
 
 async function describeLineage(patternId: string) {
@@ -87,7 +50,7 @@ async function describeLineage(patternId: string) {
 function provenanceSummary(result: LensResult) {
   const top = result.candidates[0];
   return {
-    band: result.band,
+    match: result.band,
     confidence: top ? Number(top.score.toFixed(2)) : 0,
     matched_pattern_id: result.band === "strong" || result.band === "possible" ? top?.patternId : null,
     explanation:
@@ -167,6 +130,7 @@ export async function quoteLicense(input: z.infer<typeof quoteLicenseInput>) {
   const chain = await getChain(input.pattern_id);
   const p = chain[0];
   if (!p.salesAllowed) return { allowed: false, reason: `${p.designer.name} does not allow selling finished items from this pattern.` };
+  if (p.batchLimit && input.units > p.batchLimit) return { allowed: false, reason: `${p.designer.name} allows at most ${p.batchLimit} items per license.` };
   const amount = licenseAmount(Math.round(input.item_price_usd * 100), p.rateBp, p.minCents, input.units);
   const split = splitRoyalty(amount, toLinks(chain), env.platformFeeBp);
   return {

@@ -10,10 +10,11 @@
   --line: #dad6e8;
   --accent: #c8285e;
   --accent-soft: #f9dce6;
+  --accent-strong: #a01d4a;
   --on-accent: #ffffff;
   --money: #1e7f5f;
   --money-soft: #d8f0e6;
-  --warn: #a8620b;
+  --warn: #8a4f06;
   --warn-soft: #fbebd3;
 }
 @media (prefers-color-scheme: dark) {
@@ -26,6 +27,7 @@
     --line: #33304f;
     --accent: #ff6f9a;
     --accent-soft: #3d1c2e;
+    --accent-strong: #ff8fb0;
     --on-accent: #1a0b12;
     --money: #4fd1a5;
     --money-soft: #173a30;
@@ -101,7 +103,7 @@ h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; letter-spacin
 .pill { display: inline-flex; align-items: center; gap: .35rem; line-height: 1.4; font-family: var(--font-mono); font-size: .72rem; font-weight: 600; padding: .2rem .55rem; border-radius: 999px; white-space: nowrap; }
 .pill-good { background: var(--money-soft); color: var(--money); }
 .pill-warn { background: var(--warn-soft); color: var(--warn); }
-.pill-bad { background: var(--accent-soft); color: var(--accent); }
+.pill-bad { background: var(--accent-soft); color: var(--accent-strong); }
 .pill-plain { background: var(--sunk); color: var(--muted); }
 
 .bar-track { height: 8px; background: var(--sunk); border-radius: 99px; overflow: hidden; }

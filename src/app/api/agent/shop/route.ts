@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 export const POST = route(async (req: Request) => {
-  checkAiBudget(req);
+  checkAiBudget(req, 15, 6);
   const { prompt } = z.object({ prompt: z.string().trim().min(3).max(600) }).parse(await req.json());
   return NextResponse.json(await runShopper(prompt));
 });

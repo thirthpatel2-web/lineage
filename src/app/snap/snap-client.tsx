@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { LineageTree } from "@/components/lineage-tree";
 import { formatCents, licenseAmount, splitRoyalty } from "@/lib/money";
 import type { MatchCandidate } from "@/lib/db/schema";
@@ -45,6 +46,14 @@ export function SnapClient({ makers, feeBp, aiOn, paypalLive }: { makers: { id: 
   const [match, setMatch] = useState<Match | null>(null);
   const [lineage, setLineage] = useState<Node[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
+  const params = useSearchParams();
+
+  // /snap?sample=astronaut starts the demo with one click from the home page.
+  useEffect(() => {
+    const sample = SAMPLES.find((s) => s.src.includes(`/${params.get("sample")}-`));
+    if (sample) onSample(sample.src);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function analyse(body: FormData, previewUrl: string) {
     setPreview(previewUrl);
@@ -122,7 +131,7 @@ export function SnapClient({ makers, feeBp, aiOn, paypalLive }: { makers: { id: 
         </div>
         {!aiOn && (
           <p className="rounded-xl bg-warn-soft p-3 text-sm text-warn">
-            Claude vision is off (no ANTHROPIC_API_KEY), so matching uses image similarity only and can&apos;t tell a remix from its base as reliably.
+            Demo mode: Lineage is matching by overall look only. With Claude vision on, it also checks construction details, so it tells a remix from its original more reliably.
           </p>
         )}
       </section>
@@ -198,7 +207,7 @@ function Result({ match, lineage, onChoose, makers, feeBp, paypalLive }: { match
           {top.features.map((f) => (
             <div key={f.name} className="grid grid-cols-[1fr_3rem] items-center gap-x-3 gap-y-1 text-sm">
               <span>{f.name}</span>
-              <span className="text-right font-mono tabular-nums">{f.score.toFixed(2)}</span>
+              <span className="text-right font-mono tabular-nums">{Math.round(f.score * 100)}%</span>
               <div className="bar-track col-span-2"><div className="bar-fill" style={{ width: `${f.score * 100}%` }} /></div>
             </div>
           ))}
@@ -209,7 +218,7 @@ function Result({ match, lineage, onChoose, makers, feeBp, paypalLive }: { match
             <ul className="mt-2 flex flex-col gap-2">
               {match.candidates.slice(1).map((c) => (
                 <li key={c.patternId} className="flex items-center justify-between gap-3 rounded-lg bg-sunk p-2">
-                  <span>{c.title} · {c.designer} <span className="font-mono text-muted">({c.score.toFixed(2)})</span></span>
+                  <span>{c.title} · {c.designer} <span className="font-mono text-muted">({Math.round(c.score * 100)}% match)</span></span>
                   <button className="btn btn-ghost px-3 py-1 text-xs" onClick={() => onChoose(c)}>Use this</button>
                 </li>
               ))}
@@ -242,7 +251,7 @@ function LicenseForm({ chain, matchId, makers, feeBp, paypalLive }: { chain: Nod
 
   const quote = useMemo(() => {
     const itemCents = Math.round(price * 100);
-    if (!pattern.salesAllowed || !(units > 0) || !(itemCents > 0)) return null;
+    if (!pattern.salesAllowed || !Number.isInteger(units) || units < 1 || units > 500 || !(itemCents >= 100)) return null;
     const amount = licenseAmount(itemCents, pattern.rateBp, pattern.minCents, units);
     const credits = splitRoyalty(amount, chain.map((p) => ({ patternId: p.id, designerId: p.id, parentShareBp: p.parentShareBp })), feeBp);
     return { amount, credits };

@@ -26,10 +26,10 @@ export default function EvalPage() {
   const report: Report | null = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : null;
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
-      <div className="eyebrow">Measured, not claimed</div>
+      <div className="eyebrow">Accuracy</div>
       <h1 className="mt-3 text-5xl font-extrabold">How accurate is Lineage Lens?</h1>
       <p className="mt-3 max-w-3xl text-muted">
-        A wrong match could accuse an honest maker, so we measure it. <code className="font-mono text-ink">npm run eval</code> runs the same matcher the app uses
+        A wrong match could accuse an honest maker, so we measure how often Lineage gets it right. The test runs the same matcher the app uses
         on a labelled test set, including items nobody registered, and writes this report.
       </p>
       {!report ? (
@@ -37,7 +37,7 @@ export default function EvalPage() {
       ) : (
         <>
           <div className="mt-8 flex flex-wrap gap-2">
-            <span className="pill pill-plain">{report.method === "vision" ? "CLIP recall + Claude vision" : "CLIP embeddings only"}</span>
+            <span className="pill pill-plain">{report.method === "vision" ? "Image similarity + Claude vision" : "Image similarity only (no Claude)"}</span>
             <span className="pill pill-plain">{report.dataset === "photos" ? "real photos" : "illustrated stand-ins"}</span>
             <span className="pill pill-plain">{report.photos} test images</span>
             <span className="pill pill-plain">{new Date(report.generatedAt).toLocaleString()}</span>
@@ -50,12 +50,12 @@ export default function EvalPage() {
           </div>
           {report.dataset === "illustrations" && (
             <p className="mt-4 rounded-xl bg-warn-soft p-4 text-sm text-warn">
-              These numbers come from illustrated stand-ins with varied colour, pose, framing and background. Real photos are harder: run{" "}
-              <code className="font-mono">npm run eval -- --photos ./photos</code> with photographed makes to replace them.
+              Tested on 160 varied illustrations, not real photos, and without Claude vision. Real photos are harder, so expect lower numbers until
+              photographed items are tested.
             </p>
           )}
           <div className="card mt-8 overflow-x-auto p-6">
-            <h2 className="text-xl font-bold">Confusion: true pattern → top match</h2>
+            <h2 className="text-xl font-bold">What each pattern was matched as</h2>
             <table className="mt-4 w-full text-sm">
               <thead>
                 <tr className="text-left text-muted">

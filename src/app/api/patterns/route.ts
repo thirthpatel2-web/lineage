@@ -5,7 +5,7 @@ import { z } from "zod";
 import { getDb, schema } from "@/lib/db";
 import { route } from "@/lib/http";
 import { checkAiBudget } from "@/lib/rate-limit";
-import { storeImage } from "@/lib/images";
+import { readUpload, storeImage } from "@/lib/images";
 import { wouldCycle } from "@/lib/lineage";
 
 export const runtime = "nodejs";
@@ -30,6 +30,7 @@ const Fields = z.object({
 // Register a designer (or reuse one by PayPal email) and a pattern with its reference photos.
 export const POST = route(async (req: Request) => {
   checkAiBudget(req);
+  if (Number(req.headers.get("content-length") ?? 0) > 6 * 12 * 1024 * 1024) return NextResponse.json({ error: "Those photos are too large together." }, { status: 413 });
   const form = await req.formData();
   const fields = Fields.parse(Object.fromEntries([...form.entries()].filter(([, v]) => typeof v === "string")));
   const photos = form.getAll("photos").filter((f): f is File => f instanceof File && f.size > 0);
@@ -67,6 +68,6 @@ export const POST = route(async (req: Request) => {
     parentId: fields.parentId ?? null,
     parentShareBp: fields.parentId ? Math.round(fields.parentSharePercent * 100) : 0,
   });
-  for (const photo of photos) await storeImage(Buffer.from(await photo.arrayBuffer()), "pattern", id);
+  for (const photo of photos) await storeImage(await readUpload(photo), "pattern", id);
   return NextResponse.json({ id, designerId: designer.id });
 });

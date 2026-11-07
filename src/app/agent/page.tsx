@@ -47,7 +47,7 @@ export default async function AgentPage() {
               <li key={r.id} className="card flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
                 <span className="min-w-0 flex-1">&ldquo;{r.prompt}&rdquo;</span>
                 <span className="pill pill-plain">{r.steps.filter((s) => s.kind === "tool").length} tool calls</span>
-                <span className="pill pill-plain">{r.agent === "shopper" ? "Claude" : "scripted"}</span>
+                <span className="pill pill-plain">{r.agent === "shopper" ? "Claude" : "Demo script"}</span>
               </li>
             ))}
           </ul>

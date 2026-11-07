@@ -29,7 +29,7 @@ const api = (p, body) => page.evaluate(async ([p, body]) => {
   const r = await fetch(p, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body ?? {}) });
   return { status: r.status, json: await r.json() };
 }, [p, body]);
-const live = !(await (await page.goto(base + "/")).text()).includes("PayPal simulated");
+const live = (await (await page.goto(base + "/")).text()).includes("PayPal sandbox · Claude");
 
 // Follows PayPal's approval link, whichever PayPal is behind it.
 async function approve() {

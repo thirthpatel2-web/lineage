@@ -34,7 +34,7 @@ export default async function TagPage({ params }: { params: Promise<{ code: stri
           : `${chain[0].designer.name} designed the pattern and was paid a royalty.`}
       </p>
       <div className="mt-8">
-        <LineageTree chain={chain.map((p) => ({ id: p.id, title: p.title, designer: p.designer.name, parentShareBp: p.parentShareBp, imageId: images.get(p.id) }))} item={{ label: `This item, by ${maker?.name}`, sub: `License ${license.id}` }} />
+        <LineageTree chain={chain.map((p) => ({ id: p.id, title: p.title, designer: p.designer.name, parentShareBp: p.parentShareBp, imageId: images.get(p.id) }))} item={{ label: `This item, by ${maker?.name}`, sub: "Verified by Lineage" }} />
       </div>
       <p className="mt-8 text-sm text-muted">Lineage pays pattern designers whenever their work is sold, instead of filing takedowns.</p>
     </div>

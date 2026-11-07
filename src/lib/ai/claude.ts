@@ -24,20 +24,25 @@ export async function structured<S extends z.ZodType>(
   schema: S,
   opts: { system: string; content: Content; effort?: "low" | "medium" | "high"; maxTokens?: number },
 ): Promise<z.infer<S>> {
-  const response = await claude().beta.messages.parse({
+  const format = betaZodOutputFormat(schema);
+  // create() rather than parse(): parse() would throw a generic error on a refusal or a cut-off
+  // reply before we could tell which it was.
+  const response = await claude().beta.messages.create({
     model: MODEL,
     max_tokens: opts.maxTokens ?? 16000,
     betas: ["server-side-fallback-2026-07-01"],
     fallbacks: "default",
     system: opts.system,
-    output_config: { effort: opts.effort ?? "medium", format: betaZodOutputFormat(schema) },
+    output_config: { effort: opts.effort ?? "medium", format: { type: "json_schema", schema: format.schema } },
     messages: [{ role: "user", content: opts.content }],
   });
   if (response.stop_reason === "refusal") {
     throw new ModelRefusal(response.stop_details?.explanation ?? "The model declined this request.");
   }
-  if (!response.parsed_output) throw new Error(`Claude returned no parseable output (stop_reason: ${response.stop_reason})`);
-  return response.parsed_output as z.infer<S>;
+  if (response.stop_reason === "max_tokens") throw new Error("Claude's answer was cut off before it finished.");
+  const text = response.content.findLast((b) => b.type === "text");
+  if (!text || text.type !== "text") throw new Error(`Claude returned no answer (stop_reason: ${response.stop_reason})`);
+  return format.parse(text.text) as z.infer<S>;
 }
 
 export function imageBlock(bytes: Buffer, mime = "image/jpeg"): Anthropic.Beta.BetaImageBlockParam {

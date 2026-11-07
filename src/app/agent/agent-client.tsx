@@ -55,7 +55,7 @@ export function AgentClient({ aiOn }: { aiOn: boolean }) {
           <label htmlFor="prompt" className="font-bold">Ask the shopping agent</label>
           <textarea id="prompt" className="input" rows={3} value={prompt} onChange={(e) => setPrompt(e.target.value)} />
           <button className="btn btn-accent" disabled={busy || prompt.trim().length < 3}>{busy ? "Agent is working…" : "Run agent"}</button>
-          {!aiOn && <p className="text-xs text-warn">No ANTHROPIC_API_KEY: a scripted agent runs the same tools in a fixed order.</p>}
+          {!aiOn && <p className="text-xs text-muted">Demo mode: the agent follows a fixed script, using the same tools.</p>}
         </form>
         <div className="flex flex-col gap-2">
           {SUGGESTIONS.map((s) => (
@@ -83,9 +83,13 @@ export function AgentClient({ aiOn }: { aiOn: boolean }) {
             <div className="card rise border-accent p-5">
               <div className="flex items-center gap-2">
                 <span className="pill pill-good">Answer</span>
-                <span className="pill pill-plain">{run.scripted ? "scripted" : "Claude Opus 5.5"}</span>
+                <span className="pill pill-plain">{run.scripted ? "Demo script" : "Claude Opus 5.5"}</span>
               </div>
-              <p className="mt-3 whitespace-pre-wrap">{run.result.replace(run.approveUrl ?? "\u0000", "the link below")}</p>
+              <Recommendation run={run} />
+              <details className="mt-3 text-sm text-muted">
+                <summary className="cursor-pointer">The agent&apos;s full answer</summary>
+                <p className="mt-2 whitespace-pre-wrap">{run.result.replace(run.approveUrl ?? "\u0000", "the link below")}</p>
+              </details>
               {run.approveUrl && (
                 <a href={run.approveUrl} className="btn btn-paypal mt-4 w-full text-base">Review &amp; approve in PayPal</a>
               )}
@@ -122,5 +126,39 @@ function StepRow({ step }: { step: Step }) {
         <pre className="mt-3 max-h-72 overflow-auto rounded-lg bg-sunk p-3 font-mono text-xs">{JSON.stringify({ input: step.input, output: step.output }, null, 2)}</pre>
       </details>
     </li>
+  );
+}
+
+type Found = { lineage_market?: { listing_id: string; title: string; price: string; maker: string; pattern: string; image_url: string }[]; other_marketplaces?: { title: string; image_url?: string }[] };
+
+// The item the agent chose, and what it refused, at a glance.
+function Recommendation({ run }: { run: Run }) {
+  const found = run.steps.find((s) => s.name === "find_licensed_items")?.output as Found | undefined;
+  const bought = run.steps.find((s) => s.name === "buy_item")?.input as { listing_id?: string } | undefined;
+  const pick = found?.lineage_market?.find((l) => l.listing_id === bought?.listing_id) ?? (bought ? undefined : found?.lineage_market?.[0]);
+  const skipped = run.steps.filter((s) => s.name === "check_provenance" && (s.output as { licensed?: boolean } | undefined)?.licensed === false);
+  if (!pick && skipped.length === 0) return null;
+  return (
+    <div className="mt-4 flex flex-col gap-3">
+      {pick && (
+        <div className="flex items-center gap-4 rounded-xl bg-sunk p-3">
+          <img src={pick.image_url} alt={pick.title} className="size-20 rounded-lg object-cover" />
+          <div className="min-w-0">
+            <div className="font-display text-lg font-bold">{pick.title}</div>
+            <div className="text-sm text-muted">{pick.maker} · {pick.price}</div>
+            <div className="text-sm text-money">Licensed: {pick.pattern}, royalty included</div>
+          </div>
+        </div>
+      )}
+      {skipped.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="pill pill-bad">Skipped {skipped.length} unlicensed {skipped.length === 1 ? "copy" : "copies"}</span>
+          {skipped.map((s, i) => {
+            const url = (s.input as { image_url?: string } | undefined)?.image_url;
+            return url ? <img key={i} src={url} alt="Unlicensed copy" className="size-9 rounded-md object-cover opacity-70" /> : null;
+          })}
+        </div>
+      )}
+    </div>
   );
 }

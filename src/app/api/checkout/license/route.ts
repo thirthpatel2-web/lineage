@@ -4,6 +4,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import { getDb, schema } from "@/lib/db";
 import { route } from "@/lib/http";
+import { checkPaymentRate } from "@/lib/rate-limit";
 import { startLicenseCheckout } from "@/lib/commerce";
 
 export const runtime = "nodejs";
@@ -20,6 +21,7 @@ const Body = z.object({
 });
 
 export const POST = route(async (req: Request) => {
+  checkPaymentRate(req);
   const body = Body.parse(await req.json());
   const db = await getDb();
   let makerId: string;

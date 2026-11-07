@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 import { ModelRefusal } from "@/lib/ai/claude";
 import { PayPalError } from "@/lib/paypal";
 import { RateLimited } from "@/lib/rate-limit";
+import { UserError } from "@/lib/images";
 
 /** Wrap a route handler so every failure becomes a clear JSON error instead of a stack trace. */
 export function route<A extends unknown[]>(handler: (...args: A) => Promise<Response>) {
@@ -22,11 +23,12 @@ export function errorResponse(error: unknown) {
   }
   if (error instanceof PayPalError) {
     console.error("[paypal]", error.message, error.debugId, JSON.stringify(error.details ?? ""));
-    return NextResponse.json({ error: error.message, paypalDebugId: error.debugId }, { status: error.status >= 500 ? 502 : 400 });
+    return NextResponse.json({ error: error.status >= 500 ? "PayPal is having trouble right now. Please try again." : "PayPal couldn't complete that request.", paypalDebugId: error.debugId }, { status: error.status >= 500 ? 502 : 400 });
   }
   if (error instanceof ModelRefusal) {
     return NextResponse.json({ error: `The AI declined: ${error.message}` }, { status: 422 });
   }
+  if (error instanceof UserError) return NextResponse.json({ error: error.message }, { status: 400 });
   console.error(error);
-  return NextResponse.json({ error: error instanceof Error ? error.message : "Something went wrong" }, { status: 500 });
+  return NextResponse.json({ error: "Something went wrong on our side. Please try again." }, { status: 500 });
 }

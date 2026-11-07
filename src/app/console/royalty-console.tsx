@@ -49,15 +49,20 @@ export function RoyaltyConsole({ data, paypalLive }: { data: ConsoleData; paypal
   async function act(path: string, label: string) {
     setBusy(label);
     setMessage(null);
+    try {
     const res = await fetch(path, { method: "POST" });
-    const json = await res.json();
+    const json = await res.json().catch(() => ({ error: `Request failed (${res.status})` }));
     if (!res.ok) setMessage(json.error ?? "Failed");
     else if ("captures" in json) setMessage(json.live ? `Checked ${json.captures} payments against PayPal: ${json.matched} matched, ${json.notListedYet} not listed yet (PayPal's search can lag by hours), ${json.amountMismatches.length} amount mismatches.` : "Reconciliation compares with PayPal's records, so it needs sandbox keys.");
     else if (json.batch === null) setMessage(`Nobody has reached the $1.00 payout minimum yet.`);
     else if (json.batch) setMessage(`Sent PayPal Payouts batch ${json.batch.senderBatchId}: ${json.batch.items} payees, $${(json.batch.totalCents / 100).toFixed(2)}.`);
     else setMessage(`Refreshed ${json.refreshed} batch(es) from PayPal${json.paidOffers ? `, ${json.paidOffers} invoice(s) newly paid` : ""}${json.failed ? `; ${json.failed} could not be read` : ""}.`);
-    setBusy(null);
-    router.refresh();
+    } catch {
+      setMessage("Couldn't reach the server. Check your connection and try again.");
+    } finally {
+      setBusy(null);
+      router.refresh();
+    }
   }
 
   const columns: Record<Tab, ColDef[]> = {
@@ -108,7 +113,7 @@ export function RoyaltyConsole({ data, paypalLive }: { data: ConsoleData; paypal
         <Kpi k="Owed, next payout" v={totals.owed} tone="text-warn" />
         <Kpi k="In a PayPal batch" v={totals.inFlight} />
         <Kpi k="Paid by PayPal" v={totals.paid} tone="text-money" />
-        <Kpi k="Unclaimed" v={totals.unclaimed} />
+        <Kpi k="Waiting for designer to claim" v={totals.unclaimed} />
         <Kpi k="Designers earned, all time" v={totals.designers} />
       </div>
 
@@ -122,7 +127,7 @@ export function RoyaltyConsole({ data, paypalLive }: { data: ConsoleData; paypal
         <button className="btn btn-ghost" disabled={busy !== null} onClick={() => act("/api/payouts/reconcile", "reconcile")}>
           {busy === "reconcile" ? "Comparing with PayPal…" : "Reconcile with PayPal"}
         </button>
-        <span className="text-sm text-muted">{paypalLive ? "PayPal sandbox Payouts API" : "Simulated PayPal (no keys)"}</span>
+        <span className="text-sm text-muted">{paypalLive ? "PayPal sandbox: test money only" : "Demo mode: PayPal stand-in"}</span>
         {message && <span className="rounded-lg bg-sunk px-3 py-1.5 text-sm">{message}</span>}
       </div>
 
@@ -133,8 +138,8 @@ export function RoyaltyConsole({ data, paypalLive }: { data: ConsoleData; paypal
           </button>
         ))}
       </div>
-      <div style={{ height: 520 }}>
-        <AgGridReact theme={theme} rowData={rows} columnDefs={columns[tab]} defaultColDef={{ flex: 1, minWidth: 110, sortable: true, resizable: true, cellClass: "flex items-center" }} pagination paginationPageSize={20} overlayNoRowsTemplate="Nothing here yet. License a pattern on Snap &amp; license to see royalties appear." />
+      <div style={rows.length > 12 ? { height: 560 } : undefined}>
+        <AgGridReact theme={theme} domLayout={rows.length > 12 ? "normal" : "autoHeight"} rowData={rows} columnDefs={columns[tab]} defaultColDef={{ flex: 1, minWidth: 110, sortable: true, resizable: true, cellClass: "flex items-center" }} pagination paginationPageSize={20} overlayNoRowsTemplate="Nothing here yet. License a pattern on Snap &amp; license to see royalties appear." />
       </div>
     </div>
   );

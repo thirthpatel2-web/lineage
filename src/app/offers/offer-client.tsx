@@ -54,7 +54,7 @@ export function OfferForm({ patterns, aiOn }: { patterns: { id: string; title: s
       </div>
       <div className="flex flex-wrap items-center gap-3 md:col-span-2">
         <button className="btn btn-accent" disabled={busy}>{busy ? "Checking the match…" : "Check & draft offer"}</button>
-        {!aiOn && <span className="text-xs text-warn">No ANTHROPIC_API_KEY: a template message is used.</span>}
+        {!aiOn && <span className="text-xs text-muted">Demo mode: a standard offer message is used.</span>}
       </div>
       {result && (
         <div className={`rise rounded-xl p-4 md:col-span-2 ${result.ok ? "bg-money-soft" : "bg-warn-soft text-warn"}`}>

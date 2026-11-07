@@ -17,99 +17,129 @@ export const maxDuration = 120;
 type Msg = Anthropic.Beta.BetaMessageParam;
 type Block = Anthropic.Beta.BetaContentBlockParam;
 
+const MAX_BODY_BYTES = 200_000;
+const MAX_TOKENS = 4000;
+
 // AG Studio's history has nowhere to carry Claude's thinking blocks, but a tool round must go back
-// with them intact. So they wait here, keyed by the tool call they came with.
-const globalForThinking = globalThis as unknown as { lineageThinking?: Map<string, Block[]> };
-const thinkingByCall = (globalForThinking.lineageThinking ??= new Map<string, Block[]>());
-const MAX_REMEMBERED_CALLS = 500;
+// exactly as Claude sent it. So each reply that called a tool waits here, whole, keyed by its tool
+// calls, and is replayed verbatim. In memory, which suits one instance.
+const globalForReplies = globalThis as unknown as { lineageReplies?: Map<string, Block[]> };
+const replies = (globalForReplies.lineageReplies ??= new Map<string, Block[]>());
+const MAX_REMEMBERED = 500;
 
 function toMessages(input: AgAiConversationItem[]) {
-  const system: string[] = [];
   const messages: Msg[] = [];
+  const replayed = new Set<Block[]>();
   const push = (role: "user" | "assistant", block: Block) => {
     const last = messages.at(-1);
-    if (last && last.role === role && Array.isArray(last.content)) last.content.push(block);
-    else messages.push({ role, content: [block] });
+    if (!last || last.role !== role || !Array.isArray(last.content)) {
+      messages.push({ role, content: [block] });
+      return;
+    }
+    const content = last.content as Block[];
+    // Tool results must open a user turn, ahead of any text.
+    if (block.type === "tool_result") content.splice(content.filter((b) => b.type === "tool_result").length, 0, block);
+    else content.push(block);
   };
   for (const item of input) {
     if (item.type === "message" && item.kind === "input") {
       const text = item.content.flatMap((c) => (c.type === "text" ? [c.text] : [])).join("\n");
-      if (item.role === "system") system.push(text);
-      else if (text) push("user", { type: "text", text });
+      if (text) push("user", { type: "text", text: item.role === "system" ? `(Note from the app: ${text})` : text });
     } else if (item.type === "message" && item.kind === "output") {
       const text = item.content.flatMap((c) => (c.type === "text" ? [c.text] : [])).join("\n");
       if (text) push("assistant", { type: "text", text });
     } else if (item.type === "function_call") {
+      const original = replies.get(item.callId);
+      if (original) {
+        if (replayed.has(original)) continue; // the whole reply is already in place
+        replayed.add(original);
+        // Replace this turn's rebuilt text with the reply exactly as Claude sent it.
+        const last = messages.at(-1);
+        const texts = new Set(original.flatMap((b) => (b.type === "text" ? [b.text.trim()] : [])));
+        if (last?.role === "assistant" && Array.isArray(last.content)) {
+          last.content = (last.content as Block[]).filter((b) => !(b.type === "text" && texts.has(b.text.trim())));
+          if (last.content.length === 0) messages.pop();
+        }
+        for (const block of original) push("assistant", block);
+        continue;
+      }
       let parsed: unknown = {};
       try {
         parsed = JSON.parse(item.arguments || "{}");
       } catch {
         parsed = {};
       }
-      for (const block of thinkingByCall.get(item.callId) ?? []) push("assistant", block);
       push("assistant", { type: "tool_use", id: item.callId, name: item.name, input: parsed as Record<string, unknown> });
     } else if (item.type === "function_call_output") {
       push("user", { type: "tool_result", tool_use_id: item.callId, content: item.output });
     }
   }
   if (messages[0]?.role !== "user") messages.unshift({ role: "user", content: [{ type: "text", text: "Continue." }] });
-  return { system, messages };
+  // A history that ends on the assistant would be read as a prefill, which this model rejects.
+  if (messages.at(-1)?.role === "assistant") messages.push({ role: "user", content: [{ type: "text", text: "Continue." }] });
+  return messages;
 }
 
 export async function POST(req: Request) {
   if (!mode.ai) return NextResponse.json({ error: "Set ANTHROPIC_API_KEY to use the AI assistant." }, { status: 503 });
   // This route spends Claude credit, so it only serves Lineage's own pages, within the demo budget.
   const origin = req.headers.get("origin");
-  if (origin && new URL(origin).host !== req.headers.get("host")) return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  if (!origin || new URL(origin).host !== req.headers.get("host")) return NextResponse.json({ error: "Not allowed" }, { status: 403 });
+  if (Number(req.headers.get("content-length") ?? 0) > MAX_BODY_BYTES) return NextResponse.json({ error: "Request too large" }, { status: 413 });
   try {
     checkAiBudget(req, 30);
   } catch (error) {
     return errorResponse(error);
   }
-  const request = (await req.json()) as AgLlmRequest;
-  const { system, messages } = toMessages(request.input);
-  if (request.instructions) system.unshift(request.instructions);
+  const raw = await req.text();
+  if (raw.length > MAX_BODY_BYTES) return NextResponse.json({ error: "Request too large" }, { status: 413 });
+  let request: AgLlmRequest;
+  try {
+    request = JSON.parse(raw) as AgLlmRequest;
+  } catch {
+    return NextResponse.json({ error: "Bad request" }, { status: 400 });
+  }
+  if (!Array.isArray(request.input) || !request.responseFormat) return NextResponse.json({ error: "Bad request" }, { status: 400 });
 
+  // The system prompt stays the same every turn so earlier thinking stays valid; per-turn
+  // directions go at the end of the conversation instead.
+  const system = request.instructions ?? "You are the analytics assistant inside Lineage's AG Studio royalty dashboard.";
+  const messages = toMessages(request.input);
+  const turnNotes: string[] = [];
   // Claude Opus 5.5 does not accept forced tool choice, so a required tool becomes an instruction.
   const choice = request.toolChoice;
-  if (choice === "required") system.push("You must call one of the available tools in this turn.");
-  else if (choice && typeof choice === "object") system.push(`You must call the tool "${choice.name}" in this turn.`);
+  if (choice === "required") turnNotes.push("Call one of the available tools in this turn.");
+  else if (choice && typeof choice === "object") turnNotes.push(`Call the tool "${choice.name}" in this turn.`);
   if (request.responseFormat.type === "json") {
-    system.push(`Reply with only a JSON object (no prose, no code fences) named "${request.responseFormat.name}" matching this JSON Schema:\n${JSON.stringify(request.responseFormat.schema)}`);
+    turnNotes.push(`Reply with only a JSON object (no prose, no code fences) named "${request.responseFormat.name}" matching this JSON Schema:\n${JSON.stringify(request.responseFormat.schema)}`);
   }
+  if (turnNotes.length) messages.push({ role: "system", content: turnNotes.join("\n\n") } as Msg);
 
-  const tools: Anthropic.Beta.BetaToolUnion[] =
-    choice === "none"
-      ? []
-      : (request.tools ?? []).map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters as Anthropic.Beta.BetaTool.InputSchema }));
+  const tools: Anthropic.Beta.BetaToolUnion[] = (request.tools ?? []).map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters as Anthropic.Beta.BetaTool.InputSchema }));
 
   try {
     const send = (history: Msg[]) =>
       claude().beta.messages.create({
         model: MODEL,
-        max_tokens: 16000,
+        max_tokens: MAX_TOKENS,
         betas: ["server-side-fallback-2026-07-01"],
         fallbacks: "default",
         output_config: { effort: "low" },
-        system: system.join("\n\n"),
+        system,
         messages: history,
-        ...(tools.length > 0 && { tools }),
+        // Tools stay declared even when none may be called, because the history may contain tool calls.
+        ...(tools.length > 0 && { tools, ...(choice === "none" && { tool_choice: { type: "none" as const } }) }),
       });
-    // Studio can change its instructions between turns, which invalidates earlier thinking blocks.
-    // The documented recovery is to strip them all and retry once.
+    // If earlier thinking can no longer be checked (say, the server restarted), the documented
+    // recovery is to strip it all and retry once.
     const response = await send(messages).catch((error: unknown) => {
       if (error instanceof Anthropic.BadRequestError && /thinking/i.test(error.message)) return send(withoutThinking(messages));
       throw error;
     });
 
-    const thinking = response.content.filter((b) => b.type === "thinking" || b.type === "redacted_thinking") as Block[];
-    for (const block of response.content) {
-      if (block.type === "tool_use" && thinking.length > 0) {
-        thinkingByCall.set(block.id, thinking);
-        break;
-      }
-    }
-    if (thinkingByCall.size > MAX_REMEMBERED_CALLS) thinkingByCall.delete(thinkingByCall.keys().next().value!);
+    const content = response.content as unknown as Block[];
+    for (const block of response.content) if (block.type === "tool_use") replies.set(block.id, content);
+    while (replies.size > MAX_REMEMBERED) replies.delete(replies.keys().next().value!);
 
     const output: AgAiOutputItem[] = [];
     const text = response.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("\n").trim();
@@ -133,7 +163,8 @@ export async function POST(req: Request) {
     };
     return NextResponse.json(result);
   } catch (error) {
-    const message = error instanceof Anthropic.APIError ? `Claude API ${error.status}: ${error.message}` : error instanceof Error ? error.message : String(error);
+    console.error("[ai/claude]", error);
+    const message = error instanceof Anthropic.RateLimitError ? "The AI is busy. Try again in a moment." : "The AI assistant couldn't answer. Try again.";
     return NextResponse.json({ id: "error", createdAt: Date.now(), status: "failed", error: { code: "api_error", message }, output: [] } satisfies AgLlmResponse, { status: 200 });
   }
 }

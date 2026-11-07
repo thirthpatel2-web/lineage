@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { applyPayoutItemStatus, completeOrder, markOfferPaid } from "@/lib/commerce";
-import { verifyWebhook } from "@/lib/paypal";
+import { getInvoiceStatus, verifyWebhook } from "@/lib/paypal";
 
 export const runtime = "nodejs";
 
@@ -19,18 +20,29 @@ type Event = {
   };
 };
 
-// PayPal webhooks. Unverified events are stored for inspection but never move money.
+// PayPal webhooks. An event is recorded only after its signature verifies and it has been handled,
+// so a failure returns 500 and PayPal's retry gets a fresh chance. Handlers are idempotent.
 export async function POST(req: Request) {
-  const event = (await req.json()) as Event;
-  const verified = await verifyWebhook(req.headers, event).catch(() => false);
+  let event: Event;
+  try {
+    event = (await req.json()) as Event;
+  } catch {
+    return NextResponse.json({ error: "Bad request" }, { status: 400 });
+  }
+  if (!event?.id || !event.event_type || !event.resource) return NextResponse.json({ error: "Bad request" }, { status: 400 });
+
+  let verified: boolean;
+  try {
+    verified = await verifyWebhook(req.headers, event);
+  } catch (error) {
+    console.error("[webhook] verification call failed", error);
+    return NextResponse.json({ error: "Try again" }, { status: 503 });
+  }
+  if (!verified) return NextResponse.json({ error: "Signature not verified" }, { status: 400 });
+
   const db = await getDb();
-  const inserted = await db
-    .insert(schema.webhookEvents)
-    .values({ id: event.id, type: event.event_type, payload: event, verified })
-    .onConflictDoNothing()
-    .returning();
-  if (inserted.length === 0) return NextResponse.json({ ok: true, duplicate: true });
-  if (!verified) return NextResponse.json({ ok: true, ignored: "signature not verified" });
+  const seen = await db.query.webhookEvents.findFirst({ where: eq(schema.webhookEvents.id, event.id) });
+  if (seen) return NextResponse.json({ ok: true, duplicate: true });
 
   try {
     const r = event.resource;
@@ -44,8 +56,9 @@ export async function POST(req: Request) {
         break;
       }
       case "INVOICING.INVOICE.PAID": {
+        // This event also fires for partial and pending payments, so confirm the invoice is fully paid.
         const invoiceId = r.invoice?.id ?? r.id;
-        if (invoiceId) await markOfferPaid(invoiceId);
+        if (invoiceId && (await getInvoiceStatus(invoiceId)) === "PAID") await markOfferPaid(invoiceId);
         break;
       }
       default:
@@ -55,6 +68,8 @@ export async function POST(req: Request) {
     }
   } catch (error) {
     console.error("[webhook]", event.event_type, error);
+    return NextResponse.json({ error: "Handler failed" }, { status: 500 });
   }
+  await db.insert(schema.webhookEvents).values({ id: event.id, type: event.event_type, payload: event, verified: true }).onConflictDoNothing();
   return NextResponse.json({ ok: true });
 }

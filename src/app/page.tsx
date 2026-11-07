@@ -11,18 +11,19 @@ export default async function Home() {
     <div className="mx-auto max-w-6xl px-4">
       <section className="grid items-center gap-10 py-14 md:grid-cols-[1.15fr_.85fr] md:py-20">
         <div className="rise">
-          <div className="eyebrow">Content ID for the handmade world</div>
+          <div className="eyebrow">Like YouTube Content ID, for handmade things</div>
           <h1 className="mt-4 font-display text-6xl font-extrabold leading-[0.92] tracking-tight md:text-8xl">
             Royalty,
             <br />
             not <span className="text-accent">takedown.</span>
           </h1>
           <p className="mt-6 max-w-xl text-lg text-muted">
-            Snap a photo of something you crocheted, sewed or 3D-printed. Lineage finds the pattern it came from and every designer it was remixed from. One
-            PayPal payment licenses it, and PayPal Payouts pays each designer their share.
+            Pattern designers get paid when people sell what they made from their patterns. No lawyers, no takedowns. Snap a photo of something you
+            crocheted, sewed or 3D-printed: Lineage finds the pattern and every designer it was remixed from, one PayPal payment licenses it, and PayPal
+            Payouts pays each designer their share.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/snap" className="btn btn-accent">I make things: snap &amp; license</Link>
+            <Link href="/snap?sample=astronaut" className="btn btn-accent">Try it: match a sample bunny →</Link>
             <Link href="/designers/new" className="btn btn-ghost">I design patterns</Link>
             <Link href="/agent" className="btn btn-ghost">I&apos;m an AI agent</Link>
           </div>
@@ -57,14 +58,14 @@ export default async function Home() {
           </p>
           <div className="mt-6 flex gap-3">
             <Link href="/agent" className="btn">Watch the shopping agent</Link>
-            <Link href="/patterns/pat_astro_bunny/lineage.json" className="btn btn-ghost">See a lineage.json</Link>
+            <Link href="/patterns/pat_astro_bunny/lineage.json" className="btn btn-ghost">See a machine-readable license</Link>
           </div>
         </div>
         <pre className="card overflow-x-auto p-5 font-mono text-[0.8rem] leading-relaxed text-muted">
 {`> check_provenance(image_url)
 {
   "licensed": false,
-  "band": "strong",
+  "match": "strong",
   "matched_pattern_id": "pat_astro_bunny",
   "lineage": [
     { "title": "Astronaut Bunny", "designer": "Jun Park" },
@@ -121,8 +122,8 @@ function HeroTree() {
         <text x="130" y="172" fill="var(--muted)" fontFamily="var(--font-mono)" fontSize="11">REMIX · 70%</text>
         <text x="130" y="196" fill="var(--ink)" fontFamily="var(--font-display)" fontWeight="700" fontSize="17">Astronaut Bunny</text>
         {[
-          [20, "Ana's stall", "12 licensed"],
-          [160, "Leo's shop", "5 licensed"],
+          [20, "Ana's stall", "licensed"],
+          [160, "Leo's shop", "licensed"],
           [300, "Online listing", "offer sent"],
         ].map(([x, a, b]) => (
           <g key={String(a)}>

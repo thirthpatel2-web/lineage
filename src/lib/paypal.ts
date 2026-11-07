@@ -166,7 +166,7 @@ export async function captureOrder(orderId: string): Promise<PayPalOrder> {
     });
   } catch (error) {
     // Already captured (a refresh or a webhook got there first): read the final state instead.
-    if (error instanceof PayPalError && error.status === 422) {
+    if (error instanceof PayPalError && (error.status === 422 || error.status === 409)) {
       const order = await getOrder(orderId);
       if (order.status === "COMPLETED") return order;
     }
@@ -176,6 +176,12 @@ export async function captureOrder(orderId: string): Promise<PayPalOrder> {
 
 export function captureOf(order: PayPalOrder) {
   return order.purchase_units?.[0]?.payments?.captures?.[0];
+}
+
+/** Full refund of a capture (used when the last item sold to two buyers at once). */
+export async function refundCapture(captureId: string, requestId: string): Promise<{ id: string; status: string }> {
+  if (!mode.paypal) return { id: `SIMREF${nanoid(10).toUpperCase()}`, status: "COMPLETED" };
+  return call<{ id: string; status: string }>("POST", `/v2/payments/captures/${encodeURIComponent(captureId)}/refund`, {}, { requestId });
 }
 
 // --- Payouts ------------------------------------------------------------------------
@@ -306,7 +312,7 @@ export type PayPalTransaction = {
 export async function searchTransactions(days = 30): Promise<PayPalTransaction[]> {
   if (!mode.paypal) return [];
   const end = new Date();
-  const start = new Date(end.getTime() - Math.min(days, 31) * 86_400_000);
+  const start = new Date(end.getTime() - Math.min(days, 30) * 86_400_000);
   const iso = (d: Date) => d.toISOString().replace(/\.\d{3}Z$/, "Z");
   const json = await call<{ transaction_details?: PayPalTransaction[] }>(
     "GET",

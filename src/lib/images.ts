@@ -4,11 +4,23 @@ import { getDb, schema } from "@/lib/db";
 import { embedImage } from "@/lib/ai/embed";
 
 export const MAX_UPLOAD_BYTES = 12 * 1024 * 1024;
+const PHOTO_FORMATS = new Set(["jpeg", "png", "webp", "heif", "gif", "avif"]);
+
+/** An error whose message is safe and useful to show to the person who caused it. */
+export class UserError extends Error {}
+
+/** Read an uploaded file, refusing oversized ones before loading them into memory. */
+export async function readUpload(file: File) {
+  if (file.size > MAX_UPLOAD_BYTES) throw new UserError("That photo is larger than 12 MB.");
+  return Buffer.from(await file.arrayBuffer());
+}
 
 /** Normalise an upload (respect EXIF rotation, cap at 1024px, JPEG) and compute its embedding. */
 export async function prepareImage(input: Buffer) {
   if (input.byteLength > MAX_UPLOAD_BYTES) throw new Error("Image is larger than 12 MB");
-  const { data, info } = await sharp(input, { failOn: "error" })
+  const meta = await sharp(input, { limitInputPixels: 40_000_000 }).metadata().catch(() => null);
+  if (!meta?.format || !PHOTO_FORMATS.has(meta.format)) throw new UserError("Please upload a JPEG, PNG, WebP, HEIC or GIF photo.");
+  const { data, info } = await sharp(input, { failOn: "error", limitInputPixels: 40_000_000 })
     .rotate()
     .resize({ width: 1024, height: 1024, fit: "inside", withoutEnlargement: true })
     .flatten({ background: "#ffffff" })

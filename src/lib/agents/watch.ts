@@ -29,6 +29,7 @@ export async function draftOffer(input: {
 }) {
   const chain = await getChain(input.patternId);
   const pattern = chain[0];
+  if (!pattern.salesAllowed) return { ok: false as const, reason: `${pattern.designer.name} doesn't allow selling finished items from "${pattern.title}", so there's no license to offer.` };
   const image = await storeImage(input.photo, "offer");
   const lens = await runLens(image);
   const hit = lens.candidates.find((c) => c.patternId === pattern.id);
@@ -59,7 +60,7 @@ export async function draftOffer(input: {
             {
               type: "text",
               text: `Designer(s) to credit: ${credits}. Pattern: "${pattern.title}". Seller: ${input.sellerName}. Listing: ${input.listingUrl ?? "a listing they found"}.
-Offer: license ${input.units} items at ${formatCents(perItem)} each (${pattern.rateBp / 100}% of ${formatCents(input.itemPriceCents)}), total ${formatCents(amountCents)}, payable by the attached PayPal invoice.
+Offer: license ${input.units} items at ${formatCents(perItem)} each (${perItem > Math.round((input.itemPriceCents * pattern.rateBp) / 10000) ? `the designer's per-item minimum` : `${pattern.rateBp / 100}% of ${formatCents(input.itemPriceCents)}`}), total ${formatCents(amountCents)}, payable by the attached PayPal invoice.
 Why we think it matches: ${hit?.explanation ?? ""}`,
             },
           ],

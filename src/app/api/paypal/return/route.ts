@@ -8,15 +8,15 @@ export const runtime = "nodejs";
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const orderId = url.searchParams.get("token");
-  const ref = url.searchParams.get("ref") ?? "";
+  const ref = /^(lic|sale)_[\w-]+$/.test(url.searchParams.get("ref") ?? "") ? url.searchParams.get("ref")! : "";
   const receipt = (path: string) => NextResponse.redirect(`${env.appUrl}${path}`, 303);
-  const fallback = ref.startsWith("sale_") ? `/orders/${ref}` : `/licenses/${ref}`;
+  const fallback = !ref ? "/" : ref.startsWith("sale_") ? `/orders/${ref}` : `/licenses/${ref}`;
   if (!orderId) return receipt(`${fallback}?error=missing-token`);
   try {
     const result = await completeOrder(orderId);
     return receipt(result.kind === "sale" ? `/orders/${result.id}` : `/licenses/${result.id}`);
   } catch (error) {
     console.error("[paypal return]", error);
-    return receipt(`${fallback}?error=${encodeURIComponent(error instanceof Error ? error.message : "capture-failed")}`);
+    return receipt(`${fallback}?error=capture-failed`);
   }
 }

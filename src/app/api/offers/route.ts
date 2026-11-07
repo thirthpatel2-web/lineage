@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { route } from "@/lib/http";
+import { readUpload } from "@/lib/images";
 import { checkAiBudget } from "@/lib/rate-limit";
 import { draftOffer } from "@/lib/agents/watch";
 
@@ -23,7 +24,7 @@ export const POST = route(async (req: Request) => {
   const fields = Fields.parse(Object.fromEntries([...form.entries()].filter(([, v]) => typeof v === "string")));
   const file = form.get("photo");
   let photo: Buffer;
-  if (file instanceof File && file.size > 0) photo = Buffer.from(await file.arrayBuffer());
+  if (file instanceof File && file.size > 0) photo = await readUpload(file);
   else if (fields.sample && /^\/api\/demo-art\/[\w-]+\/\d+$/.test(fields.sample)) {
     const [, , , design, seed] = fields.sample.split("/");
     const { renderJpeg } = await import("@/lib/demo-art");

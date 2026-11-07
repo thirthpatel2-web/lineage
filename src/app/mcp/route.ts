@@ -37,10 +37,14 @@ function buildServer() {
 }
 
 async function handle(request: Request) {
-  try {
-    if (request.method === "POST") checkAiBudget(request, 30);
-  } catch (error) {
-    return errorResponse(error);
+  if (request.method === "POST") {
+    try {
+      checkAiBudget(request, 30);
+      const body = await request.clone().json().catch(() => null);
+      if (Array.isArray(body)) return Response.json({ jsonrpc: "2.0", id: null, error: { code: -32600, message: "Batch requests are not supported" } }, { status: 400 });
+    } catch (error) {
+      return errorResponse(error);
+    }
   }
   const server = buildServer();
   const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });

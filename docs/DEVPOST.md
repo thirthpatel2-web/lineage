@@ -70,7 +70,9 @@ PayPal Payouts is a remarkably good fit for creator royalties: recipients need o
 
 ## Built with
 
-nextjs, typescript, react, tailwindcss, postgresql, drizzle, pglite, paypal-orders-api, paypal-payouts-api, paypal-invoicing-api, paypal-webhooks, claude, anthropic-sdk, clip, onnx-runtime, transformers.js, model-context-protocol, ag-grid, ag-studio, channel3, render
+nextjs, typescript, react, tailwindcss, postgresql, drizzle, pglite, paypal-orders-api, paypal-payouts-api, paypal-invoicing-api, paypal-webhooks, paypal-transaction-search, claude, anthropic-sdk, clip, onnx-runtime, transformers.js, model-context-protocol, ag-grid, ag-studio, render
+
+(Add `channel3` only if you set a Channel3 key and saw real results.)
 
 ## AI tools used (required disclosure)
 
