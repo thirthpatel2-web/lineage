@@ -4,7 +4,7 @@ Copy each section into the matching Devpost field. Replace the placeholders in C
 
 > **Before you paste.** Some of this describes what the code is built to do but hasn't been confirmed yet. Delete or reword anything still untrue:
 > - "with real PayPal objects": true once `npm run preflight` passes and you've done a purchase in the sandbox.
-> - The remix-vs-base claim under Challenges: true once you've seen Claude vision get it right. The measured 99% is embeddings only.
+> - The remix-vs-base claim under Challenges: measured with Gemini vision on 40 illustrations (100%). Re-check on real photos if you have them.
 > - "(via Channel3)": only if you set a Channel3 key and tested it. Otherwise say "other marketplaces (labelled sample data)".
 > - The 99% / 100% / 0.6% numbers: replace with your real-photo results if you have them.
 > - The AG Studio assistant: it has only run against a stand-in. Try it once with your key.
@@ -31,18 +31,18 @@ YouTube solved this for video with Content ID: a match can earn the rights holde
 - **Royalties up the chain.** A remix pays its own designer and the original pattern's designer, split to the cent, through one weekly PayPal Payouts batch.
 - **Provenance tags.** Each licensed item gets a QR tag. Buyers scan it to see who designed what they're holding.
 - **Fair by design.** Classic designs nobody owns, like a granny square, are never charged. Patterns whose designer forbids selling can't be licensed. If Lineage isn't confident about a match, it refuses to contact anyone.
-- **License offers instead of takedowns.** A designer submits a listing they found. Lineage confirms the match, Claude drafts a friendly offer, and once the designer approves it goes out as a PayPal invoice.
-- **Agentic commerce.** Lineage is an MCP server with six tools, and every pattern publishes a machine-readable `lineage.json` license. Our shopping agent (Claude) searches Lineage Market and other marketplaces (via Channel3), checks every outside listing's provenance, skips unlicensed copies, and prepares a PayPal checkout that a person approves.
-- **Royalty console.** An AG Grid ledger of every credit and payout, plus an AG Studio dashboard whose AI assistant runs on Claude.
+- **License offers instead of takedowns.** A designer submits a listing they found. Lineage confirms the match, the AI drafts a friendly offer, and once the designer approves it goes out as a PayPal invoice.
+- **Agentic commerce.** Lineage is an MCP server with six tools, and every pattern publishes a machine-readable `lineage.json` license. Our shopping agent (Gemini) searches Lineage Market and other marketplaces (via Channel3), checks every outside listing's provenance, skips unlicensed copies, and prepares a PayPal checkout that a person approves.
+- **Royalty console.** An AG Grid ledger of every credit and payout, plus an AG Studio dashboard whose AI assistant runs on Gemini.
 
 ## How we built it
 
 - **Next.js 15 + TypeScript**, Postgres via Drizzle (embedded PGlite locally, so `npm install && npm run dev` just works).
-- **Lineage Lens:** CLIP ViT-B/32 embeddings run locally (ONNX) to shortlist candidate patterns; Claude Opus 5.5 then compares construction details across the photos with structured output, explains its reasoning, and flags traditional designs. Plain code turns scores into strong / possible / none bands.
+- **Lineage Lens:** CLIP ViT-B/32 embeddings run locally (ONNX) to shortlist candidate patterns; Gemini (free tier) then compares construction details across the photos with structured output, explains its reasoning, and flags traditional designs. Plain code turns scores into strong / possible / none bands.
 - **PayPal:** Orders v2 for licenses and Market purchases, Payouts for royalties, Invoicing v2 for license offers, Webhooks with signature verification, and Transaction Search behind a "Reconcile with PayPal" button.
 - **Money safety:** integer cents and basis points; credits written only after a verified `COMPLETED` capture for the exact amount; idempotent capture, webhook and payout handling (`PayPal-Request-Id`, unique `sender_batch_id`, conditional state flips); 2,000-case randomized test that every split sums exactly.
-- **Agents:** the Anthropic SDK Tool Runner drives the shopping agent; the same tool functions back a stateless Streamable HTTP MCP server built with the official MCP SDK.
-- **AG Studio:** we wrote a custom `AgLlmAdapter` that proxies AG Studio's assistant turns to Claude on our server, translating tool calls both ways.
+- **Agents:** Gemini function calling drives the shopping agent in a small tool loop; the same tool functions back a stateless Streamable HTTP MCP server built with the official MCP SDK.
+- **AG Studio:** we wrote a custom `AgLlmAdapter` that proxies AG Studio's assistant turns to Gemini on our server, translating tool calls both ways.
 - **Render** blueprint with Postgres and a weekly payout cron.
 
 ## Challenges we ran into
@@ -53,7 +53,7 @@ YouTube solved this for video with Content ID: a match can earn the rights holde
 
 ## Accomplishments that we're proud of
 
-- 99% top-1 and 100% top-3 accuracy with a 0.6% false-match rate on our 160-image test set (illustrations; see "What's next").
+- 100% top-1 accuracy and 0 false matches with Gemini vision on our illustrated test set, including telling every remix from its base and classing every granny square as traditional (illustrations; see "What's next").
 - A complete loop with real PayPal objects: photo → match → checkout → capture → ledger → Payouts batch → QR tag a buyer can scan.
 - An MCP server and `lineage.json` license format that let any AI agent shop responsibly.
 
@@ -70,13 +70,13 @@ PayPal Payouts is a remarkably good fit for creator royalties: recipients need o
 
 ## Built with
 
-nextjs, typescript, react, tailwindcss, postgresql, drizzle, pglite, paypal-orders-api, paypal-payouts-api, paypal-invoicing-api, paypal-webhooks, paypal-transaction-search, claude, anthropic-sdk, clip, onnx-runtime, transformers.js, model-context-protocol, ag-grid, ag-studio, render
+nextjs, typescript, react, tailwindcss, postgresql, drizzle, pglite, paypal-orders-api, paypal-payouts-api, paypal-invoicing-api, paypal-webhooks, paypal-transaction-search, gemini, google-genai, clip, onnx-runtime, transformers.js, model-context-protocol, ag-grid, ag-studio, render
 
 (Add `channel3` only if you set a Channel3 key and saw real results.)
 
 ## AI tools used (required disclosure)
 
-- **Claude Opus 5.5** (`claude-opus-5-5`, Anthropic API): vision verification of pattern matches, license-term extraction, offer drafting, the shopping agent, and the AG Studio assistant.
+- **Gemini Flash-Lite** (Google Gemini API, free tier): vision verification of pattern matches, license-term extraction, offer drafting, the shopping agent, and the AG Studio assistant. The code also supports Claude Opus 5.5 if a paid key is set; the submitted demo uses Gemini.
 - **CLIP ViT-B/32** (`Xenova/clip-vit-base-patch32`, run locally with Transformers.js / ONNX Runtime): image embeddings for the first matching stage.
 - **Claude Code** was used as a coding assistant during development.
 

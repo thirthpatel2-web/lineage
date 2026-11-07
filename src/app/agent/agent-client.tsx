@@ -20,7 +20,7 @@ const TOOL_LABEL: Record<string, string> = {
   buy_item: "Prepared PayPal checkout",
 };
 
-export function AgentClient({ aiOn }: { aiOn: boolean }) {
+export function AgentClient({ aiOn, aiName }: { aiOn: boolean; aiName: string }) {
   const [prompt, setPrompt] = useState(SUGGESTIONS[0]);
   const [busy, setBusy] = useState(false);
   const [run, setRun] = useState<Run | null>(null);
@@ -83,7 +83,7 @@ export function AgentClient({ aiOn }: { aiOn: boolean }) {
             <div className="card rise border-accent p-5">
               <div className="flex items-center gap-2">
                 <span className="pill pill-good">Answer</span>
-                <span className="pill pill-plain">{run.scripted ? "Demo script" : "Claude Opus 5.5"}</span>
+                <span className="pill pill-plain">{run.scripted ? "Demo script" : aiName}</span>
               </div>
               <Recommendation run={run} />
               <details className="mt-3 text-sm text-muted">

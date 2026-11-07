@@ -2,13 +2,13 @@
 
 Hosted demo: **APP_URL_HERE** · Video: **VIDEO_URL_HERE**
 
-The header shows which integrations are live: "PayPal sandbox" and "Claude vision on" on the hosted demo.
+The header shows which integrations are live: "PayPal sandbox · Gemini" when everything is live.
 Sandbox buyer login for PayPal: see the private testing field on Devpost.
 
 ## 1. A maker licenses a remix (2 min)
 
 1. Open **Snap & license** and click the **Astronaut bunny** sample (or upload your own photo).
-2. Lineage matches it to *Astronaut Bunny* by Jun Park and traces it up to *Clover Bunny* by Maya Okafor. Read Claude's explanation and feature scores.
+2. Lineage matches it to *Astronaut Bunny* by Jun Park and traces it up to *Clover Bunny* by Maya Okafor. Read the AI's explanation and feature scores.
 3. Keep 10 items at $40 and click **Pay with PayPal**. Log in with the sandbox buyer and approve.
 4. You land on the receipt: the PayPal order and capture ids, the split (Jun $25.20, Maya $10.80, Lineage $4.00), and 10 QR provenance tags. Scan one with your phone.
 
@@ -37,4 +37,4 @@ git clone https://github.com/thirthpatel2-web/lineage && cd lineage
 npm install && npm run dev
 ```
 
-It works with no keys (offline mode). See the README to add PayPal sandbox and Claude keys.
+It works with no keys (offline mode). See the README to add PayPal sandbox keys and a free Gemini key.

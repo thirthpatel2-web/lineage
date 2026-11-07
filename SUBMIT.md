@@ -16,7 +16,7 @@ PAYPAL_CLIENT_SECRET=
 PAYPAL_ENV=sandbox
 PAYPAL_MERCHANT_EMAIL=          # your sandbox BUSINESS account email
 DEMO_PAYEE_EMAIL=               # a sandbox PERSONAL account email; demo payouts go here and show as paid
-ANTHROPIC_API_KEY=
+GEMINI_API_KEY=                 # free, from aistudio.google.com/apikey (no billing)
 ```
 
 Get them at developer.paypal.com > Apps & Credentials (Sandbox), and console.anthropic.com. In the PayPal app's features, turn on **Payouts**, **Invoicing** and **Transaction search**. Check that the sandbox business account has a balance.
@@ -27,7 +27,7 @@ Get them at developer.paypal.com > Apps & Credentials (Sandbox), and console.ant
 npm run preflight
 ```
 
-It makes real sandbox and Claude calls and prints PASS / FAIL / SKIP for each. **Everything must say PASS except webhooks, which you set up after deploying.** If something fails, the line includes PayPal's debug id. Fix it before going further.
+It makes real sandbox and Gemini calls and prints PASS / FAIL / SKIP for each. **Everything must say PASS except webhooks, which you set up after deploying.** If something fails, the line includes PayPal's debug id. Fix it before going further.
 
 Then look at the real thing:
 
@@ -59,7 +59,7 @@ Then add a webhook in your PayPal app:
 
 Put its id in `PAYPAL_WEBHOOK_ID` on Render. Open the site in a private window and run through `JUDGES.md`.
 
-The rules require the project to stay testable, free, until judging ends on **Dec 15, 2026**. Keep the service running and the Claude account funded until then.
+The rules require the project to stay testable, free, until judging ends on **Dec 15, 2026**. Keep the service running until then. Gemini's free tier and the PayPal sandbox cost nothing.
 
 ## 5. Real photos (the biggest quality jump)
 

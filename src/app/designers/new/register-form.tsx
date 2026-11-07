@@ -80,7 +80,7 @@ export function RegisterForm({ patterns, aiOn }: { patterns: { id: string; title
         </button>
         {terms && (
           <div className="rise grid gap-4 rounded-xl bg-sunk p-4 sm:grid-cols-2">
-            <p className="sm:col-span-2"><strong>{terms.summary}</strong> {terms.source === "ai" ? <span className="pill pill-good">read by Claude</span> : <span className="pill pill-warn">defaults</span>}</p>
+            <p className="sm:col-span-2"><strong>{terms.summary}</strong> {terms.source === "ai" ? <span className="pill pill-good">read by AI</span> : <span className="pill pill-warn">defaults</span>}</p>
             {terms.notes.length > 0 && <ul className="text-sm text-warn sm:col-span-2">{terms.notes.map((n) => <li key={n}>• {n}</li>)}</ul>}
             <label className="field" htmlFor="salesAllowed"><span>Selling finished items</span>
               <select id="salesAllowed" name="salesAllowed" className="input" defaultValue={String(terms.sales_allowed)}><option value="true">Allowed</option><option value="false">Not allowed</option></select>

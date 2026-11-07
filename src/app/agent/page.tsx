@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { connection } from "next/server";
 import { desc } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
-import { env, mode } from "@/lib/env";
+import { aiName, env, mode } from "@/lib/env";
 import { AgentClient } from "./agent-client";
 
 export const metadata: Metadata = { title: "Agents" };
@@ -21,7 +21,7 @@ export default async function AgentPage() {
         Ask for a handmade gift. The agent searches Lineage Market and other marketplaces, checks every outside listing&apos;s provenance with Lineage Lens,
         skips unlicensed copies, and prepares a PayPal checkout that you approve. Every step is recorded below.
       </p>
-      <AgentClient aiOn={mode.ai} />
+      <AgentClient aiOn={mode.ai} aiName={aiName} />
 
       <div className="stitch my-12" role="separator" />
 
@@ -47,7 +47,7 @@ export default async function AgentPage() {
               <li key={r.id} className="card flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
                 <span className="min-w-0 flex-1">&ldquo;{r.prompt}&rdquo;</span>
                 <span className="pill pill-plain">{r.steps.filter((s) => s.kind === "tool").length} tool calls</span>
-                <span className="pill pill-plain">{r.agent === "shopper" ? "Claude" : "Demo script"}</span>
+                <span className="pill pill-plain">{r.agent === "shopper" ? "Claude" : r.agent === "shopper-gemini" ? "Gemini" : "Demo script"}</span>
               </li>
             ))}
           </ul>

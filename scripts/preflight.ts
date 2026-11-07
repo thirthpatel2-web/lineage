@@ -1,14 +1,14 @@
 // One command to prove the real services work, before you record the video or submit.
 //   npm run preflight
-// Reads .env.local and talks to the PayPal SANDBOX and the Claude API for real. Creates one order,
+// Reads .env.local and talks to the PayPal SANDBOX and the AI provider (Gemini free tier, or Claude) for real. Creates one order,
 // one $1.00 payout, one draft invoice; a payout needs funds in the sandbox business account.
-// It refuses to run against PayPal live. Claude calls cost a few cents.
+// It refuses to run against PayPal live. With Gemini's free tier, the AI check costs nothing.
 
 import "./load-env";
 import { z } from "zod";
 import { imageBlock, structured } from "@/lib/ai/claude";
 import { renderJpeg } from "@/lib/demo-art";
-import { env, mode } from "@/lib/env";
+import { aiName, env, mode } from "@/lib/env";
 import * as paypal from "@/lib/paypal";
 
 type Result = { name: string; ok: boolean | null; note: string };
@@ -52,9 +52,9 @@ async function main() {
     if (!env.paypal.webhookId) skip("PayPal: webhooks", "Set PAYPAL_WEBHOOK_ID after you deploy (the deployed URL receives them)");
   }
 
-  if (!mode.ai) skip("Claude", "No ANTHROPIC_API_KEY in .env.local");
+  if (!mode.ai) skip("AI", "No GEMINI_API_KEY (free) or ANTHROPIC_API_KEY in .env.local");
   else {
-    await check("Claude: vision with structured output", async () => {
+    await check(`${aiName}: vision with structured output`, async () => {
       const reply = await structured(z.object({ what: z.string(), has_helmet: z.boolean(), confidence: z.number().int().nullable() }), {
         system: "You describe photos of craft items.",
         effort: "low",

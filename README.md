@@ -15,7 +15,7 @@ Built for the [PayPal AI Hackathon 2026](https://paypalaihackathon.devpost.com/)
 | ![Snap and license](docs/screenshots/2-snap-match.png) | ![License receipt](docs/screenshots/3-license-receipt.png) |
 | **Shopping agent skipping unlicensed copies** | **Royalty console (AG Grid)** |
 | ![Agent](docs/screenshots/4-agent.png) | ![Royalty console](docs/screenshots/5-royalty-console.png) |
-| **AG Studio dashboard with a Claude assistant** | **Pattern lineage and lineage.json** |
+| **AG Studio dashboard with an AI assistant** | **Pattern lineage and lineage.json** |
 | ![AG Studio](docs/screenshots/6-ag-studio.png) | ![Pattern](docs/screenshots/7-pattern-lineage.png) |
 
 ---
@@ -31,15 +31,15 @@ YouTube solved this for video: when Content ID finds a match, the rights holder 
 | | |
 |---|---|
 | **Snap & license** (`/snap`) | Photo in → matched pattern, its remix lineage, the designer's terms, a live quote and a PayPal checkout. |
-| **Lineage Lens** | CLIP image embeddings shortlist candidates; Claude compares construction details (ear shaping, a helmet ring, a jetpack) and explains its answer; plain code bands the score. Traditional designs nobody owns are never charged. |
+| **Lineage Lens** | CLIP image embeddings shortlist candidates; a vision model (Gemini's free tier) compares construction details (ear shaping, a helmet ring, a jetpack) and explains its answer; plain code bands the score. Traditional designs nobody owns are never charged. |
 | **Royalties up the chain** | A remix pays its designer *and* the original pattern's designer, split to the cent. |
 | **Provenance tags** | Every licensed item gets a QR tag. Buyers scan it to see who designed it (`/t/...`). |
 | **Lineage Market** | Finished items whose checkout splits the royalty out of each PayPal payment. |
-| **Shopping agent** (`/agent`) | Claude searches, checks outside listings' provenance, skips unlicensed copies, and prepares a PayPal checkout a person approves. Every step is recorded. |
+| **Shopping agent** (`/agent`) | Gemini searches, checks outside listings' provenance, skips unlicensed copies, and prepares a PayPal checkout a person approves. Every step is recorded. |
 | **MCP server** (`/mcp`) | Six tools any agent can use: `find_licensed_items`, `check_provenance`, `get_license_terms`, `quote_license`, `buy_license`, `buy_item`. |
 | **`lineage.json`** | A machine-readable finished-item license on every pattern (`/patterns/<id>/lineage.json`). |
 | **Watch agent** (`/offers`) | A designer submits a listing; Lineage confirms the match (and refuses when unsure), drafts a friendly offer, and sends it as a PayPal invoice once approved. |
-| **Royalty console** (`/console`) | AG Grid ledger of every credit and payout, a "Run payouts" button, and an **AG Studio** dashboard with a Claude-powered assistant (`/console/studio`). |
+| **Royalty console** (`/console`) | AG Grid ledger of every credit and payout, a "Run payouts" button, and an **AG Studio** dashboard with an AI-powered assistant (`/console/studio`). |
 | **Accuracy report** (`/eval`) | Measured top-1 / top-3 / false-match rates from `npm run eval`. |
 
 ## How PayPal is used
@@ -68,13 +68,13 @@ Money rules, enforced in code (`src/lib/money.ts`, `src/lib/commerce.ts`):
 | Where | Model | What it does |
 |---|---|---|
 | Lens, stage 1 | CLIP ViT-B/32 (`Xenova/clip-vit-base-patch32`, runs locally on CPU via ONNX) | Image embeddings for fast recall against every registered pattern photo |
-| Lens, stage 2 | Claude Opus 5.5 (`claude-opus-5-5`), vision + structured output | Scores each candidate on construction features, tells remix from base, flags traditional designs, explains in plain words |
-| License reader | Claude Opus 5.5, structured output | Turns a designer's free-text terms into structured license fields the designer confirms |
-| Shopping agent | Claude Opus 5.5 via the Anthropic SDK Tool Runner | Multi-step tool use over the six Lineage tools |
-| Watch agent | Claude Opus 5.5 | Writes a warm, non-threatening license offer |
-| AG Studio assistant | Claude Opus 5.5 via a custom `AgLlmAdapter` | Answers questions and builds dashboard widgets over the royalty data |
+| Lens, stage 2 | Gemini Flash-Lite (free tier), vision + JSON schema output | Scores each candidate on construction features, tells remix from base, flags traditional designs, explains in plain words |
+| License reader | Gemini, JSON schema output | Turns a designer's free-text terms into structured license fields the designer confirms |
+| Shopping agent | Gemini function calling, in a small tool loop | Multi-step tool use over the six Lineage tools |
+| Watch agent | Gemini | Writes a warm, non-threatening license offer |
+| AG Studio assistant | Gemini via a custom `AgLlmAdapter` | Answers questions and builds dashboard widgets over the royalty data |
 
-All Claude calls use the server-side `fallbacks: "default"` option so a declined request is retried on Anthropic's recommended fallback model.
+Everything AI runs at no cost: CLIP locally, and Gemini on Google's free tier. Free-tier models are sometimes busy, so each call falls back through a short list of free models. With an `ANTHROPIC_API_KEY` set instead, the same features run on Claude Opus 5.5 (paid), with server-side fallbacks.
 
 ## Accuracy
 
@@ -82,9 +82,12 @@ All Claude calls use the server-side `fallbacks: "default"` option so a declined
 
 | Dataset | Method | Top-1 | Top-3 | False matches | Unknown items rejected |
 |---|---|---|---|---|---|
-| 160 illustrated stand-ins (5 registered designs, 3 unregistered) | CLIP only | **99.0%** | **100%** | **0.6%** | **100%** |
+| 160 illustrated stand-ins (5 registered designs, 3 unregistered) | CLIP image similarity only | 99.0% | 100% | 0.6% | 100% |
+| 40 illustrated stand-ins (same designs) | CLIP + Gemini vision (free tier) | **100%** | **100%** | **0%** | **100%** |
 
-The one miss is a remix confused with its base pattern, which is exactly what the Claude vision step is for. Illustrations are easier than photographs. Run `npm run eval -- --photos ./photos` with real photographed makes (`photos/<pattern-id>/*.jpg`, unknown items in `photos/_none/`).
+With vision on, every remix was told apart from its base pattern, all 10 granny squares and plain beanies were classed as traditional designs (no license offered), and all 5 unregistered cats got no match. Both runs are in `eval/`.
+
+The CLIP-only miss was a remix confused with its base pattern; the vision step fixed it. Illustrations are easier than photographs. Run `npm run eval -- --photos ./photos` with real photographed makes (`photos/<pattern-id>/*.jpg`, unknown items in `photos/_none/`).
 
 ## Architecture
 
@@ -94,17 +97,17 @@ flowchart TB
     D[Designer console<br/>AG Grid + AG Studio]
     M[Maker app<br/>snap → match → license]
     B[Provenance page<br/>QR tag · lineage.json]
-    A[AI agents<br/>Claude · ChatGPT · SDKs]
+    A[AI agents<br/>Claude · ChatGPT · Gemini · SDKs]
   end
   subgraph App["Next.js app (Render web service)"]
     API[Route handlers · MCP endpoint /mcp]
-    L[Lineage Lens<br/>CLIP recall → Claude verify]
+    L[Lineage Lens<br/>CLIP recall → Gemini vision check]
     R[Royalty ledger<br/>integer cents · splits]
     W[Webhook handler<br/>verify · dedupe]
     AG[Agents<br/>shopper · watch]
   end
   DB[(Postgres<br/>PGlite locally)]
-  C[Claude API]
+  C[Gemini API, free tier<br/>Claude optional]
   P[PayPal sandbox<br/>Orders · Payouts · Invoicing · Webhooks]
   D & M & B & A --> API
   API --> L & R & AG
@@ -124,20 +127,20 @@ npm install
 npm run dev          # http://localhost:3000
 ```
 
-That's all. Without a `DATABASE_URL`, Lineage uses an embedded Postgres (PGlite) in `./.data` and loads the demo data on first start. Without PayPal or Anthropic keys it runs in a clearly labelled offline mode: a simulated PayPal approval page and embedding-only matching. The header shows which integrations are live.
+That's all. Without a `DATABASE_URL`, Lineage uses an embedded Postgres (PGlite) in `./.data` and loads the demo data on first start. Without PayPal or AI keys it runs in a clearly labelled demo mode: a stand-in PayPal approval page and image-similarity-only matching. The header shows which mode is on.
 
-To use the real PayPal sandbox and Claude, copy `.env.example` to `.env.local` and fill it in:
+To use the real PayPal sandbox and AI, copy `.env.example` to `.env.local` and fill it in:
 
 1. **PayPal sandbox app**: [developer.paypal.com](https://developer.paypal.com/dashboard/applications/sandbox) > Apps & Credentials > create an app. Copy the client id and secret into `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET`, and put the sandbox **business** account email in `PAYPAL_MERCHANT_EMAIL`. In the app's features, make sure **Payouts**, **Invoicing** and **Transaction search** are on.
 2. **Sandbox accounts**: create a sandbox **personal** account to pay with. For payouts to show as claimed, set the demo designers' and makers' PayPal emails to sandbox personal accounts too.
 3. **Webhooks** (deployed URL only): add `https://<your-app>/api/webhooks/paypal` with the events `CHECKOUT.ORDER.APPROVED`, `PAYMENT.CAPTURE.COMPLETED`, `INVOICING.INVOICE.PAID` and `PAYMENT.PAYOUTS-ITEM.*`, and put the webhook id in `PAYPAL_WEBHOOK_ID`. Locally the return URL and the "Refresh statuses" button cover the same ground.
-4. **Claude**: set `ANTHROPIC_API_KEY`.
+4. **AI (free)**: create a free API key at [aistudio.google.com](https://aistudio.google.com/apikey) and set `GEMINI_API_KEY`. No card or billing is needed. Optionally, set `ANTHROPIC_API_KEY` instead to use Claude, which is paid.
 
 Other scripts:
 
 ```bash
-npm test            # money math and Claude request tests
-npm run preflight   # real calls to the PayPal sandbox and Claude: run after adding keys
+npm test            # money math, address filtering and AI request tests
+npm run preflight   # real calls to the PayPal sandbox and the AI: run after adding keys
 npm run e2e         # every flow in a browser, against a running server
 npm run eval        # accuracy report
 npm run seed        # (re)load demo data (stop the dev server first when using PGlite)
@@ -148,10 +151,10 @@ npm run build && npm start
 
 | Check | Against | Proves |
 |---|---|---|
-| `npm test` | Pure functions, intercepted HTTP | Splits are exact; Claude requests are shaped as documented |
+| `npm test` | Pure functions, intercepted HTTP | Splits are exact; private addresses are refused; AI requests are shaped as documented |
 | `npm run e2e` offline | PGlite, built-in simulator | Every flow works for someone with no keys |
-| `npm run e2e` live paths | Real Postgres, `scripts/mock-services.mjs` | The live PayPal and Claude code handles those services' documented responses |
-| `npm run preflight` | The real PayPal sandbox and Claude API | The real services accept our requests |
+| `npm run e2e` live paths | Real Postgres, `scripts/mock-services.mjs` | The live PayPal and Claude code paths handle those services' documented responses |
+| `npm run preflight` | The real PayPal sandbox and the Gemini API | The real services accept our requests (passing for orders, invoices, Transaction Search and Gemini vision; see SUBMIT.md for the Payouts region note) |
 
 The stand-in server is only as accurate as our reading of the docs, so preflight is the check that counts.
 
@@ -165,12 +168,13 @@ The stand-in server is only as accurate as our reading of the docs, so preflight
 src/lib/money.ts          Integer-cent royalty math (+ tests)
 src/lib/paypal.ts         Every PayPal call, plus the offline simulator
 src/lib/commerce.ts       Checkout, capture → ledger, payouts, invoice offers
-src/lib/ai/lens.ts        Lineage Lens: CLIP recall → Claude verification → bands
+src/lib/ai/lens.ts        Lineage Lens: CLIP recall → vision verification → bands
+src/lib/ai/gemini.ts      Gemini free tier: structured answers, free-model fallback
 src/lib/ai/embed.ts       Local CLIP embeddings
 src/lib/agent-tools.ts    The six agent tools (shared by /mcp and the shopping agent)
 src/lib/agents/           Shopping agent and watch agent
 src/app/mcp/route.ts      MCP server (Streamable HTTP)
-src/app/api/ai/claude/    AG Studio ↔ Claude adapter (server side)
+src/app/api/ai/claude/    AG Studio ↔ Gemini/Claude adapter (server side)
 scripts/eval.ts           Accuracy evaluation
 ```
 

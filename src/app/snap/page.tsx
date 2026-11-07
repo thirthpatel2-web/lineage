@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { getDb, schema } from "@/lib/db";
-import { env, mode } from "@/lib/env";
+import { aiName, env, mode } from "@/lib/env";
 import { SnapClient } from "./snap-client";
 
 export const metadata: Metadata = { title: "Snap & license" };
@@ -19,7 +19,7 @@ export default async function SnapPage() {
         Photograph something you made. Lineage finds the pattern and everyone who designed it, shows their terms, and licenses it with one PayPal payment.
       </p>
       <Suspense>
-        <SnapClient makers={makers} feeBp={env.platformFeeBp} aiOn={mode.ai} paypalLive={mode.paypal} />
+        <SnapClient makers={makers} feeBp={env.platformFeeBp} aiOn={mode.ai} aiName={aiName} paypalLive={mode.paypal} />
       </Suspense>
     </div>
   );

@@ -8,6 +8,7 @@ import { NextResponse } from "next/server";
 import type { AgAiConversationItem, AgAiOutputItem, AgLlmRequest, AgLlmResponse } from "ag-studio";
 import { MODEL, claude } from "@/lib/ai/claude";
 import { mode } from "@/lib/env";
+import { geminiTurn } from "./gemini-turn";
 import { errorResponse } from "@/lib/http";
 import { checkAiBudget } from "@/lib/rate-limit";
 
@@ -81,8 +82,8 @@ function toMessages(input: AgAiConversationItem[]) {
 }
 
 export async function POST(req: Request) {
-  if (!mode.ai) return NextResponse.json({ error: "Set ANTHROPIC_API_KEY to use the AI assistant." }, { status: 503 });
-  // This route spends Claude credit, so it only serves Lineage's own pages, within the demo budget.
+  if (!mode.ai) return NextResponse.json({ error: "Set GEMINI_API_KEY (free) to use the AI assistant." }, { status: 503 });
+  // This route spends AI quota, so it only serves Lineage's own pages, within the demo budget.
   const origin = req.headers.get("origin");
   if (!origin || new URL(origin).host !== req.headers.get("host")) return NextResponse.json({ error: "Not allowed" }, { status: 403 });
   if (Number(req.headers.get("content-length") ?? 0) > MAX_BODY_BYTES) return NextResponse.json({ error: "Request too large" }, { status: 413 });
@@ -100,6 +101,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
   if (!Array.isArray(request.input) || !request.responseFormat) return NextResponse.json({ error: "Bad request" }, { status: 400 });
+
+  if (mode.aiProvider === "gemini") {
+    try {
+      return NextResponse.json(await geminiTurn(request));
+    } catch (error) {
+      console.error("[ai/gemini]", error);
+      return NextResponse.json({ id: "error", createdAt: Date.now(), status: "failed", error: { code: "api_error", message: "The AI assistant couldn't answer. Try again." }, output: [] } satisfies AgLlmResponse);
+    }
+  }
 
   // The system prompt stays the same every turn so earlier thinking stays valid; per-turn
   // directions go at the end of the conversation instead.

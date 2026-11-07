@@ -39,7 +39,7 @@ const SAMPLES = [
   { label: "Cat (unregistered)", src: "/api/demo-art/tabby-cat/3636" },
 ];
 
-export function SnapClient({ makers, feeBp, aiOn, paypalLive }: { makers: { id: string; name: string; shopName: string }[]; feeBp: number; aiOn: boolean; paypalLive: boolean }) {
+export function SnapClient({ makers, feeBp, aiOn, aiName, paypalLive }: { makers: { id: string; name: string; shopName: string }[]; feeBp: number; aiOn: boolean; aiName: string; paypalLive: boolean }) {
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -131,32 +131,32 @@ export function SnapClient({ makers, feeBp, aiOn, paypalLive }: { makers: { id: 
         </div>
         {!aiOn && (
           <p className="rounded-xl bg-warn-soft p-3 text-sm text-warn">
-            Demo mode: Lineage is matching by overall look only. With Claude vision on, it also checks construction details, so it tells a remix from its original more reliably.
+            Demo mode: Lineage is matching by overall look only. With an AI vision model on, it also checks construction details, so it tells a remix from its original more reliably.
           </p>
         )}
       </section>
 
       <section aria-live="polite" className="flex min-w-0 flex-col gap-5">
         {error && <div className="rounded-xl bg-accent-soft p-4 text-accent">{error}</div>}
-        {busy && <Thinking aiOn={aiOn} />}
+        {busy && <Thinking aiOn={aiOn} aiName={aiName} />}
         {!busy && !match && !error && (
           <div className="card p-6 text-muted">
             Your result appears here: the pattern, its designers, their terms, and the license price.
           </div>
         )}
-        {match && !busy && <Result match={match} lineage={lineage} onChoose={choose} makers={makers} feeBp={feeBp} paypalLive={paypalLive} />}
+        {match && !busy && <Result aiName={aiName} match={match} lineage={lineage} onChoose={choose} makers={makers} feeBp={feeBp} paypalLive={paypalLive} />}
       </section>
     </div>
   );
 }
 
-function Thinking({ aiOn }: { aiOn: boolean }) {
+function Thinking({ aiOn, aiName }: { aiOn: boolean; aiName: string }) {
   return (
     <div className="card flex flex-col gap-3 p-6">
       <div className="font-display text-xl font-bold">Finding the pattern…</div>
       <ol className="flex flex-col gap-2 text-sm text-muted">
         <li>1. Comparing with every registered pattern photo</li>
-        <li>2. {aiOn ? "Claude is checking construction details" : "Scoring visual similarity"}</li>
+        <li>2. {aiOn ? `${aiName} is checking construction details` : "Scoring visual similarity"}</li>
         <li>3. Tracing the remix lineage</li>
       </ol>
     </div>
@@ -170,7 +170,7 @@ function bandPill(band: Match["band"]) {
   return <span className="pill pill-plain">No match</span>;
 }
 
-function Result({ match, lineage, onChoose, makers, feeBp, paypalLive }: { match: Match; lineage: Node[]; onChoose: (c: MatchCandidate) => void; makers: { id: string; name: string; shopName: string }[]; feeBp: number; paypalLive: boolean }) {
+function Result({ aiName, match, lineage, onChoose, makers, feeBp, paypalLive }: { aiName: string; match: Match; lineage: Node[]; onChoose: (c: MatchCandidate) => void; makers: { id: string; name: string; shopName: string }[]; feeBp: number; paypalLive: boolean }) {
   const top = match.candidates[0];
   if (match.band === "traditional") {
     return (
@@ -197,7 +197,7 @@ function Result({ match, lineage, onChoose, makers, feeBp, paypalLive }: { match
       <div className="card rise p-6">
         <div className="flex flex-wrap items-center gap-2">
           {bandPill(match.band)}
-          <span className="pill pill-plain">{match.verifiedBy === "vision" ? "Checked by Claude vision" : "Image similarity only"}</span>
+          <span className="pill pill-plain">{match.verifiedBy === "vision" ? `Checked by ${aiName} vision` : "Image similarity only"}</span>
         </div>
         <h2 className="mt-3 text-3xl font-extrabold">
           {top.title} <span className="text-muted">by {top.designer}</span>

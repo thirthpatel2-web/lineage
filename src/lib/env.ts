@@ -19,6 +19,8 @@ export const env = {
     merchantEmail: read("PAYPAL_MERCHANT_EMAIL"),
   },
   anthropicKey: read("ANTHROPIC_API_KEY"),
+  geminiKey: read("GEMINI_API_KEY"),
+  geminiModel: read("GEMINI_MODEL"),
   databaseUrl: read("DATABASE_URL"),
   channel3Key: read("CHANNEL3_API_KEY"),
   agStudioKey: read("AG_STUDIO"),
@@ -28,6 +30,11 @@ export const env = {
 
 export const mode = {
   paypal: Boolean(env.paypal.clientId && env.paypal.clientSecret),
-  ai: Boolean(env.anthropicKey),
+  ai: Boolean(env.anthropicKey || env.geminiKey),
+  // Claude when its key is set; otherwise Gemini's free tier.
+  aiProvider: env.anthropicKey ? ("claude" as const) : env.geminiKey ? ("gemini" as const) : null,
   postgres: Boolean(env.databaseUrl),
 };
+
+/** The AI's name as people should see it. */
+export const aiName = mode.aiProvider === "claude" ? "Claude" : mode.aiProvider === "gemini" ? "Gemini" : "AI";

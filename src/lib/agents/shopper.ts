@@ -6,6 +6,8 @@ import { nanoid } from "nanoid";
 import { getDb, schema } from "@/lib/db";
 import { mode } from "@/lib/env";
 import { MODEL, claude } from "@/lib/ai/claude";
+import { gemini, jsonSchemaOf, withFreeModel } from "@/lib/ai/gemini";
+import type { Content } from "@google/genai";
 import { TOOLS, buyItem, checkProvenance, findLicensedItems } from "@/lib/agent-tools";
 
 export type Step = { kind: "thought" | "tool" | "error"; name?: string; input?: unknown; output?: unknown; text?: string };
@@ -24,14 +26,14 @@ export async function runShopper(prompt: string) {
   const steps: Step[] = [];
   let result: string;
   try {
-    result = mode.ai ? await withClaude(prompt, steps) : await scripted(prompt, steps);
+    result = mode.aiProvider === "claude" ? await withClaude(prompt, steps) : mode.aiProvider === "gemini" ? await withGemini(prompt, steps) : await scripted(prompt, steps);
   } catch (error) {
     steps.push({ kind: "error", text: error instanceof Error ? error.message : String(error) });
     result = "The agent stopped because of an error. See the last step.";
   }
   const db = await getDb();
   const id = `run_${nanoid(10)}`;
-  await db.insert(schema.agentRuns).values({ id, agent: mode.ai ? "shopper" : "shopper-scripted", prompt, steps, result });
+  await db.insert(schema.agentRuns).values({ id, agent: mode.aiProvider === "claude" ? "shopper" : mode.aiProvider === "gemini" ? "shopper-gemini" : "shopper-scripted", prompt, steps, result });
   return { id, steps, result, approveUrl: findApproveUrl(steps), scripted: !mode.ai };
 }
 
@@ -77,7 +79,41 @@ async function withClaude(prompt: string, steps: Step[]) {
   return final || "Done.";
 }
 
-// Offline stand-in (no ANTHROPIC_API_KEY): the same tool calls in a fixed order.
+// Gemini (free tier): the same tools through Gemini function calling, in a small loop of our own.
+async function withGemini(prompt: string, steps: Step[]) {
+  const declarations = TOOLS.map((t) => ({ name: t.name, description: t.description, parametersJsonSchema: jsonSchemaOf(t.input) }));
+  const contents: Content[] = [{ role: "user", parts: [{ text: prompt }] }];
+  for (let turn = 0; turn < 8; turn++) {
+    const response = await withFreeModel((model) =>
+      gemini().models.generateContent({ model, contents, config: { systemInstruction: SYSTEM, tools: [{ functionDeclarations: declarations }] } }),
+    );
+    const content = response.candidates?.[0]?.content;
+    if (!content?.parts?.length) throw new Error("The AI returned no answer.");
+    // The model's turn goes back exactly as it came, including any thought signatures.
+    contents.push(content);
+    const calls = content.parts.filter((p) => p.functionCall);
+    const text = content.parts.flatMap((p) => (p.text && !p.thought ? [p.text] : [])).join("\n").trim();
+    if (calls.length === 0) return text || "Done.";
+    if (text) steps.push({ kind: "thought", text });
+    const results = [];
+    for (const { functionCall } of calls) {
+      const tool = TOOLS.find((t) => t.name === functionCall!.name);
+      let output: unknown;
+      try {
+        if (!tool) throw new Error(`Unknown tool ${functionCall!.name}`);
+        output = await (tool.run as (i: unknown) => Promise<unknown>)(tool.input.parse(functionCall!.args ?? {}));
+      } catch (error) {
+        output = { error: error instanceof Error ? error.message : String(error) };
+      }
+      steps.push({ kind: "tool", name: functionCall!.name, input: functionCall!.args, output });
+      results.push({ functionResponse: { id: functionCall!.id, name: functionCall!.name, response: { result: output } } });
+    }
+    contents.push({ role: "user", parts: results });
+  }
+  return "I stopped after several steps without finishing. Try asking more specifically.";
+}
+
+// Offline stand-in (no AI key): the same tool calls in a fixed order.
 async function scripted(prompt: string, steps: Step[]) {
   const priceMatch = prompt.match(/\$\s?(\d+)/);
   const max = priceMatch ? Number(priceMatch[1]) : undefined;

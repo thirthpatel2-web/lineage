@@ -1,7 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { z } from "zod";
-import { env } from "@/lib/env";
+import { env, mode } from "@/lib/env";
+import { GeminiRefusal, geminiStructured } from "./gemini";
 
 export const MODEL = "claude-opus-5-5";
 
@@ -24,6 +25,14 @@ export async function structured<S extends z.ZodType>(
   schema: S,
   opts: { system: string; content: Content; effort?: "low" | "medium" | "high"; maxTokens?: number },
 ): Promise<z.infer<S>> {
+  if (mode.aiProvider === "gemini") {
+    try {
+      return await geminiStructured(schema, opts);
+    } catch (error) {
+      if (error instanceof GeminiRefusal) throw new ModelRefusal(error.message);
+      throw error;
+    }
+  }
   const format = betaZodOutputFormat(schema);
   // create() rather than parse(): parse() would throw a generic error on a refusal or a cut-off
   // reply before we could tell which it was.

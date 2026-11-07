@@ -5,7 +5,7 @@ import "@fontsource/atkinson-hyperlegible/400.css";
 import "@fontsource/atkinson-hyperlegible/700.css";
 import "@fontsource/jetbrains-mono/400.css";
 import "@fontsource/jetbrains-mono/600.css";
-import { mode } from "@/lib/env";
+import { aiName, mode } from "@/lib/env";
 import { Logo } from "@/components/logo";
 import { NavLinks } from "@/components/nav-links";
 import "./globals.css";
@@ -37,13 +37,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             </Link>
             <NavLinks items={NAV} />
             {mode.paypal && mode.ai ? (
-              <span className="pill pill-good shrink-0" title="Payments use the real PayPal sandbox and matching uses Claude vision. No real money moves.">
-                PayPal sandbox · Claude
+              <span className="pill pill-good shrink-0" title={`Payments use the real PayPal sandbox and matching uses ${aiName} vision. No real money moves.`}>
+                PayPal sandbox · {aiName}
               </span>
             ) : (
               <span
                 className="pill pill-plain shrink-0"
-                title={`${mode.paypal ? "Payments use the real PayPal sandbox." : "Payments use a built-in PayPal stand-in."} ${mode.ai ? "Matching uses Claude vision." : "Matching uses image similarity only, without Claude."} No real money moves.`}
+                title={`${mode.paypal ? "Payments use the real PayPal sandbox." : "Payments use a built-in PayPal stand-in."} ${mode.ai ? `Matching uses ${aiName} vision.` : "Matching uses image similarity only, without an AI vision model."} No real money moves.`}
               >
                 Demo mode
               </span>

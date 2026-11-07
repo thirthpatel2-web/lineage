@@ -33,6 +33,8 @@ services:
         sync: false
       - key: DEMO_PAYEE_EMAIL
         sync: false
+      - key: GEMINI_API_KEY
+        sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: CHANNEL3_API_KEY

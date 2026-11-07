@@ -37,7 +37,7 @@ export default function EvalPage() {
       ) : (
         <>
           <div className="mt-8 flex flex-wrap gap-2">
-            <span className="pill pill-plain">{report.method === "vision" ? "Image similarity + Claude vision" : "Image similarity only (no Claude)"}</span>
+            <span className="pill pill-plain">{report.method === "vision" ? "Image similarity + AI vision" : "Image similarity only (no Claude)"}</span>
             <span className="pill pill-plain">{report.dataset === "photos" ? "real photos" : "illustrated stand-ins"}</span>
             <span className="pill pill-plain">{report.photos} test images</span>
             <span className="pill pill-plain">{new Date(report.generatedAt).toLocaleString()}</span>
@@ -50,8 +50,8 @@ export default function EvalPage() {
           </div>
           {report.dataset === "illustrations" && (
             <p className="mt-4 rounded-xl bg-warn-soft p-4 text-sm text-warn">
-              Tested on 160 varied illustrations, not real photos, and without Claude vision. Real photos are harder, so expect lower numbers until
-              photographed items are tested.
+              Tested on {report.photos} varied illustrations, not real photos{report.method === "vision" ? "" : ", and without the AI vision step"}. Real photos
+              are harder, so expect lower numbers until photographed items are tested.
             </p>
           )}
           <div className="card mt-8 overflow-x-auto p-6">

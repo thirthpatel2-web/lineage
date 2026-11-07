@@ -98,7 +98,7 @@ export async function runLens(query: { bytes: Buffer; embedding: number[] }): Pr
       recall: c.recall,
       score: embeddingScore(c.recall),
       features: [{ name: "Overall visual similarity", score: embeddingScore(c.recall) }],
-      explanation: "Matched on overall visual similarity only. Add an Anthropic API key to compare construction details.",
+      explanation: "Matched on overall visual similarity only. Add a free Gemini API key to compare construction details.",
     }));
     return { band: bandFor(candidates[0].score), candidates, traditionalReason: null, verifiedBy: "embedding" };
   }

@@ -41,7 +41,7 @@ export default async function Home() {
       <div className="stitch my-16" role="separator" />
 
       <section className="grid gap-6 md:grid-cols-3">
-        <Step n="1" title="Find the pattern" body="Lineage Lens compares the photo with every registered pattern: first by image similarity, then Claude checks construction details like ear shaping or a helmet ring, and explains its answer." />
+        <Step n="1" title="Find the pattern" body="Lineage Lens compares the photo with every registered pattern: first by image similarity, then an AI vision model checks construction details like ear shaping or a helmet ring, and explains its answer." />
         <Step n="2" title="License in one tap" body="The maker sees the designer's own terms and pays through PayPal Checkout. Classic designs nobody owns, like a granny square, are never charged." />
         <Step n="3" title="Pay everyone in the chain" body="A remix pays its designer and the original pattern's designer, split to the cent. A weekly PayPal Payouts batch sends the money to their email." />
       </section>
